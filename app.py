@@ -1,4 +1,4 @@
-from flask import Flask, redirect, request, render_template, url_for, session, abort
+from flask import Flask, redirect, request, render_template, url_for, session, abort, flash
 from flask_sqlalchemy import SQLAlchemy
 from werkzeug.security import generate_password_hash, check_password_hash
 from datetime import datetime, timedelta, timezone, date
@@ -27,7 +27,6 @@ def admin_required(f):
             abort(403)
         return f(*args, **kwargs)
     return decorated
-
 
 class Users(db.Model):
     __tablename__ = 'users'
@@ -84,75 +83,238 @@ class Scores(db.Model):
     time_stamp_of_attempt = db.Column(db.DateTime, nullable=False, default=datetime.now(IST))
     total_scored = db.Column(db.Integer, nullable=False)
 
-
 @app.route('/')
 def home():
     return render_template('base.html')
 
 @app.route('/login', methods=['GET', 'POST'])
 def login():
-    if 'user_id' in session:  # If user is already logged in, redirect
+    if 'user_id' in session:
         user = Users.query.get(session['user_id'])
-        if user.is_admin:
-            return redirect(url_for('admin_dash'))
-        else:
-            return redirect(url_for('user_dash'))
-
+        return redirect(url_for('admin_dashboard' if user.is_admin else 'user_dash'))
+    
     if request.method == 'POST':
-        email = request.form['email']
-        password = request.form['password']
+        email = request.form.get('email')
+        password = request.form.get('password')
         user = Users.query.filter_by(email=email).first()
+        
         if user and check_password_hash(user.password, password):
-            session['user_id'] = user.user_id  # Store the user's ID in the session
-            if user.is_admin:
-                return redirect(url_for('admin_dash'))
-            else:
-                return redirect(url_for('user_dash'))
+            session['user_id'] = user.user_id
+            return redirect(url_for('admin_dashboard' if user.is_admin else 'user_dash'))
+    
     return render_template('login.html')
 
 @app.route('/register', methods=['GET', 'POST'])
 def register():
-    if 'user_id' in session:  # If user is already logged in, redirect
+    if 'user_id' in session:
         return redirect(url_for('user_dash'))
 
     if request.method == 'POST':
         email = request.form['email']
-        if Users.query.filter_by(email=email).first():
-            return render_template('register.html', error="Email already exists")
-        
-        hashed_password = generate_password_hash(request.form['password'])
-        dob_date = datetime.strptime(request.form['dob'], '%Y-%m-%d').date()
+        password = generate_password_hash(request.form['password'])
+        fullname = request.form['fullname']
+        qualification = request.form['qualification']
+        dob = datetime.strptime(request.form['dob'], '%Y-%m-%d').date()
         
         new_user = Users(
             email=email,
-            password=hashed_password,
-            fullname=request.form['fullname'],
-            qualification=request.form.get('qualification'),
-            dob=dob_date
+            password=password,
+            fullname=fullname,
+            qualification=qualification,
+            dob=dob
         )
-        
         db.session.add(new_user)
         db.session.commit()
+        flash('Registration successful. Please log in.', 'success')
         return redirect(url_for('login'))
     
     return render_template('register.html')
 
-
-@app.route('/admin_dash')
+@app.route('/admin/dashboard')
 @login_required
 @admin_required
-def admin_dash():
-    return render_template('admin_dash.html')
+def admin_dashboard():
+    users = Users.query.all()
+    subjects = Subject.query.all()
+    chapters = Chapters.query.all()
+    quizzes = Quiz.query.all()
+    return render_template('admin_dashboard.html', 
+                         users=users, 
+                         subjects=subjects,
+                         chapters=chapters,
+                         quizzes=quizzes)
 
-@app.route('/user_dash')
-@login_required
-def user_dash():
-    return render_template('user_dash.html')
+#subject
+@app.route('/admin/subject/create', methods=['GET', 'POST'])
+@admin_required
+def create_subject():
+    if request.method == 'POST':
+        name = request.form['name']
+        description = request.form['description']
+        new_subject = Subject(name=name, description=description)
+        db.session.add(new_subject)
+        db.session.commit()
+        flash('Subject created successfully!', 'success')
+        return redirect(url_for('admin_dashboard'))
+    return render_template('create_subject.html')
+
+@app.route('/admin/subject/edit/<int:subject_id>', methods=['GET', 'POST'])
+@admin_required
+def edit_subject(subject_id):
+    subject = Subject.query.get_or_404(subject_id)
+    if request.method == 'POST':
+        subject.name = request.form['name']
+        subject.description = request.form['description']
+        db.session.commit()
+        flash('Subject updated successfully!', 'success')
+        return redirect(url_for('admin_dashboard'))
+    return render_template('edit_subject.html', subject=subject)
+
+@app.route('/admin/subject/delete/<int:subject_id>', methods=['POST'])
+@admin_required
+def delete_subject(subject_id):
+    subject = Subject.query.get_or_404(subject_id)
+    db.session.delete(subject)
+    db.session.commit()
+    flash('Subject deleted successfully!', 'success')
+    return redirect(url_for('admin_dashboard'))
+
+#chapter
+@app.route('/admin/chapter/create', methods=['GET', 'POST'])
+@admin_required
+def create_chapter():
+    if request.method == 'POST':
+        name = request.form['name']
+        description = request.form['description']
+        subject_id = request.form['subject_id']
+        new_chapter = Chapters(name=name, description=description, subject_id=subject_id)
+        db.session.add(new_chapter)
+        db.session.commit()
+        flash('Chapter created successfully!', 'success')
+        return redirect(url_for('admin_dashboard'))
+    subjects = Subject.query.all()
+    return render_template('create_chapter.html', subjects=subjects)
+
+@app.route('/admin/chapter/edit/<int:chapter_id>', methods=['GET', 'POST'])
+@admin_required
+def edit_chapter(chapter_id):
+    chapter = Chapters.query.get_or_404(chapter_id)
+    if request.method == 'POST':
+        chapter.name = request.form['name']
+        chapter.description = request.form['description']
+        chapter.subject_id = request.form['subject_id']
+        db.session.commit()
+        flash('Chapter updated successfully!', 'success')
+        return redirect(url_for('admin_dashboard'))
+    subjects = Subject.query.all()
+    return render_template('edit_chapter.html', chapter=chapter, subjects=subjects)
+
+@app.route('/admin/chapter/delete/<int:chapter_id>', methods=['POST'])
+@admin_required
+def delete_chapter(chapter_id):
+    chapter = Chapters.query.get_or_404(chapter_id)
+    db.session.delete(chapter)
+    db.session.commit()
+    flash('Chapter deleted successfully!', 'success')
+    return redirect(url_for('admin_dashboard'))
+
+#quiz
+@app.route('/admin/quiz/create', methods=['GET', 'POST'])
+@admin_required
+def create_quiz():
+    if request.method == 'POST':
+        chapter_id = request.form['chapter_id']
+        date_of_quiz = datetime.strptime(request.form['date_of_quiz'], '%Y-%m-%dT%H:%M')
+        time_duration = timedelta(minutes=int(request.form['duration']))
+        new_quiz = Quiz(
+            chapter_id=chapter_id,
+            date_of_quiz=date_of_quiz,
+            time_duration=time_duration,
+            remarks=request.form['remarks']
+        )
+        db.session.add(new_quiz)
+        db.session.commit()
+        flash('Quiz created successfully!', 'success')
+        return redirect(url_for('admin_dashboard'))
+    chapters = Chapters.query.all()
+    return render_template('create_quiz.html', chapters=chapters)
+
+@app.route('/admin/quiz/edit/<int:quiz_id>', methods=['GET', 'POST'])
+@admin_required
+def edit_quiz(quiz_id):
+    quiz = Quiz.query.get_or_404(quiz_id)
+    if request.method == 'POST':
+        quiz.chapter_id = request.form['chapter_id']
+        quiz.date_of_quiz = datetime.strptime(request.form['date_of_quiz'], '%Y-%m-%dT%H:%M')
+        quiz.time_duration = timedelta(minutes=int(request.form['duration']))
+        quiz.remarks = request.form['remarks']
+        db.session.commit()
+        flash('Quiz updated successfully!', 'success')
+        return redirect(url_for('admin_dashboard'))
+    chapters = Chapters.query.all()
+    return render_template('edit_quiz.html', quiz=quiz, chapters=chapters)
+
+@app.route('/admin/quiz/delete/<int:quiz_id>', methods=['POST'])
+@admin_required
+def delete_quiz(quiz_id):
+    quiz = Quiz.query.get_or_404(quiz_id)
+    db.session.delete(quiz)
+    db.session.commit()
+    flash('Quiz deleted successfully!', 'success')
+    return redirect(url_for('admin_dashboard'))
+
+#question
+@app.route('/admin/question/create/<int:quiz_id>', methods=['GET', 'POST'])
+@admin_required
+def create_question(quiz_id):
+    quiz = Quiz.query.get_or_404(quiz_id)
+    if request.method == 'POST':
+        new_question = Questions(
+            quiz_id=quiz_id,
+            question_statement=request.form['question'],
+            option_1=request.form['option1'],
+            option_2=request.form['option2'],
+            option_3=request.form['option3'],
+            option_4=request.form['option4'],
+            correct_option=int(request.form['correct_option'])
+        )
+        db.session.add(new_question)
+        db.session.commit()
+        flash('Question added successfully!', 'success')
+        return redirect(url_for('edit_quiz', quiz_id=quiz_id))
+    return render_template('create_question.html', quiz=quiz)
+
+@app.route('/admin/question/edit/<int:question_id>', methods=['GET', 'POST'])
+@admin_required
+def edit_question(question_id):
+    question = Questions.query.get_or_404(question_id)
+    if request.method == 'POST':
+        question.question_statement = request.form['question']
+        question.option_1 = request.form['option1']
+        question.option_2 = request.form['option2']
+        question.option_3 = request.form['option3']
+        question.option_4 = request.form['option4']
+        question.correct_option = int(request.form['correct_option'])
+        db.session.commit()
+        flash('Question updated successfully!', 'success')
+        return redirect(url_for('edit_quiz', quiz_id=question.quiz_id))
+    return render_template('edit_question.html', question=question)
+
+@app.route('/admin/question/delete/<int:question_id>', methods=['POST'])
+@admin_required
+def delete_question(question_id):
+    question = Questions.query.get_or_404(question_id)
+    quiz_id = question.quiz_id
+    db.session.delete(question)
+    db.session.commit()
+    flash('Question deleted successfully!', 'success')
+    return redirect(url_for('edit_quiz', quiz_id=quiz_id))
 
 @app.route('/logout')
 def logout():
-    session.clear() 
+    session.clear()
     return redirect(url_for('home'))
+
 def create_admin():
     with app.app_context():
         db.create_all()
@@ -166,12 +328,6 @@ def create_admin():
             )
             db.session.add(admin)
             db.session.commit()
-@app.after_request
-def add_header(response):
-    response.headers['Cache-Control'] = 'no-store, no-cache, must-revalidate, post-check=0, pre-check=0, max-age=0'
-    response.headers['Pragma'] = 'no-cache'
-    response.headers['Expires'] = '-1'
-    return response
 
 if __name__ == '__main__':
     create_admin()
