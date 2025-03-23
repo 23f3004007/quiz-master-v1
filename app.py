@@ -367,13 +367,13 @@ def attempt_quiz(quiz_id):
             flash("Start time is missing. Please retry the quiz.", "danger")
             return redirect(url_for('attempt_quiz', quiz_id=quiz_id))
 
+        # Convert start_time to a timezone-aware datetime
         start_time = datetime.strptime(start_time_str, "%Y-%m-%d %H:%M:%S")
-        start_time = start_time.replace(tzinfo=IST)  
+        start_time = start_time.replace(tzinfo=IST)  # ✅ Make it offset-aware
 
-        end_time = datetime.now(IST) 
-        time_taken = end_time - start_time  
-        time_taken = str(timedelta(seconds=int(time_taken.total_seconds())))
-        time_taken = str(time_taken).split('.')[0]
+        end_time = datetime.now(IST)  # ✅ Already offset-aware
+        time_taken = end_time - start_time  # ✅ Now both are offset-aware
+
         score = 0
         user_answers = {}
 
@@ -393,8 +393,8 @@ def attempt_quiz(quiz_id):
             user_id=session['user_id'],
             quiz_id=quiz_id,
             total_scored=score,
-            time_taken=time_taken,
-            user_answers=json.dumps(user_answers)  
+            time_taken=time_taken,  # ✅ Now stored as timedelta
+            user_answers=json.dumps(user_answers)  # ✅ Stores answers as JSON
         )
         db.session.add(new_score)
         db.session.commit()
@@ -403,6 +403,8 @@ def attempt_quiz(quiz_id):
         return redirect(url_for('quiz_review', score_id=new_score.score_id))
 
     return render_template('attempt_quiz.html', quiz=quiz, questions=questions)
+
+
 
 @app.route('/user/available-quizzes')
 @login_required
