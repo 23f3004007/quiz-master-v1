@@ -1,0 +1,40 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="container mt-4">
+    <h2>Attempt Quiz: {{ quiz.chapter.name }}</h2>
+    <p><strong>Time Remaining:</strong> <span id="timer"></span></p>
+
+    <form method="POST" id="quiz-form">
+        <input type="hidden" id="start_time" name="start_time">
+
+        {% for question in questions %}
+        <div class="mb-3">
+            <p><strong>{{ loop.index }}. {{ question.question_statement }}</strong></p>
+            {% for i in range(1, 5) %}
+            <div class="form-check">
+                <input class="form-check-input" type="radio" name="q{{ question.question_id }}" value="{{ i }}" required>
+                <label class="form-check-label">{{ question['option_' ~ i] }}</label>
+            </div>
+            {% endfor %}
+        </div>
+        {% endfor %}
+        <button type="submit" class="btn btn-success">Submit Quiz</button>
+    </form>
+</div>
+<script>
+    document.getElementById("start_time").value = new Date().toISOString().slice(0, 19).replace("T", " ");
+    
+    let timeLeft = {{ quiz.time_duration.total_seconds() }};
+    function updateTimer() {
+        let minutes = Math.floor(timeLeft / 60);
+        let seconds = timeLeft % 60;
+        document.getElementById('timer').innerText = minutes + "m " + seconds + "s";
+        if (timeLeft <= 0) {
+            document.getElementById('quiz-form').submit();
+        }
+        timeLeft--;
+    }
+    setInterval(updateTimer, 1000);
+</script>
+{% endblock %}

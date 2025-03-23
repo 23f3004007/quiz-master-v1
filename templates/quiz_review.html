@@ -1,0 +1,36 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="container mt-4">
+    <h2>Quiz Review - {{ quiz.chapter.name }}</h2>
+    <p><strong>Date Attempted:</strong> {{ score.time_stamp_of_attempt.strftime('%Y-%m-%d %H:%M') }}</p>
+    <p><strong>Time Taken:</strong> {{ score.time_taken }}</p>
+    <p><strong>Score:</strong> {{ score.total_scored }}/{{ questions|length }}</p>
+
+    <hr>
+
+    {% for question in questions %}
+    <div class="mb-3">
+        <h5>{{ loop.index }}. {{ question.question_statement }}</h5>
+        <ul class="list-group">
+            {% for i in range(1, 5) %}
+            <li class="list-group-item {% if user_answers[question.question_id|string]['selected'] == i %} 
+                                           {% if user_answers[question.question_id|string]['selected'] == user_answers[question.question_id|string]['correct'] %}
+                                               list-group-item-success 
+                                           {% else %}
+                                               list-group-item-danger 
+                                           {% endif %}
+                                       {% endif %}">
+                {{ question['option_' ~ i] }}
+                {% if i == user_answers[question.question_id|string]['correct'] %}
+                <span class="badge bg-success">Correct</span>
+                {% endif %}
+            </li>
+            {% endfor %}
+        </ul>
+    </div>
+    {% endfor %}
+
+    <a href="{{ url_for('user_dashboard') }}" class="btn btn-secondary mt-3">Back to Dashboard</a>
+</div>
+{% endblock %}

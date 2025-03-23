@@ -3,7 +3,8 @@ from flask_sqlalchemy import SQLAlchemy
 from werkzeug.security import generate_password_hash, check_password_hash
 from datetime import datetime, timedelta, timezone, date
 from functools import wraps
-
+import json
+from datetime import datetime, timezone, timedelta
 IST = timezone(timedelta(hours=5, minutes=30))
 
 app = Flask(__name__)
@@ -82,16 +83,26 @@ class Scores(db.Model):
     quiz_id = db.Column(db.Integer, db.ForeignKey('quiz.quiz_id'), nullable=False)
     time_stamp_of_attempt = db.Column(db.DateTime, nullable=False, default=datetime.now(IST))
     total_scored = db.Column(db.Integer, nullable=False)
+    time_taken = db.Column(db.Interval, nullable=False)  
+    user_answers = db.Column(db.Text, nullable=False)  
+
 
 @app.route('/')
 def home():
-    return render_template('base.html')
+    if 'user_id' in session:
+        user = Users.query.get(session['user_id'])
+        if user and user.is_admin:
+            return redirect(url_for('admin_dashboard'))
+        else:
+            return redirect(url_for('user_dashboard'))
+    return redirect(url_for('login'))  
+
 
 @app.route('/login', methods=['GET', 'POST'])
 def login():
     if 'user_id' in session:
         user = Users.query.get(session['user_id'])
-        return redirect(url_for('admin_dashboard' if user.is_admin else 'user_dash'))
+        return redirect(url_for('admin_dashboard' if user.is_admin else 'user_dashboard'))
     
     if request.method == 'POST':
         email = request.form.get('email')
@@ -100,7 +111,7 @@ def login():
         
         if user and check_password_hash(user.password, password):
             session['user_id'] = user.user_id
-            return redirect(url_for('admin_dashboard' if user.is_admin else 'user_dash'))
+            return redirect(url_for('admin_dashboard' if user.is_admin else 'user_dashboard'))
     
     return render_template('login.html')
 
@@ -309,6 +320,124 @@ def delete_question(question_id):
     db.session.commit()
     flash('Question deleted successfully!', 'success')
     return redirect(url_for('edit_quiz', quiz_id=quiz_id))
+
+#user
+@app.route('/user/dashboard')
+@login_required
+def user_dashboard():
+    user = Users.query.get(session['user_id'])  
+    quizzes = Quiz.query.all() 
+    return render_template('user_dashboard.html', user=user, quizzes=quizzes)
+
+
+@app.route('/user/profile')
+@login_required
+def user_profile():
+    user = Users.query.get(session['user_id'])
+    return render_template('user_profile.html', user=user)
+
+@app.route('/user/quizzes')
+@login_required
+def user_quizzes():
+    user = Users.query.get(session['user_id'])
+    scores = Scores.query.filter_by(user_id=user.user_id).all()
+    return render_template('user_quizzes.html', scores=scores)
+
+@app.route('/user/quiz/review/<int:score_id>')
+@login_required
+def quiz_review(score_id):
+    score = Scores.query.get_or_404(score_id)
+    quiz = Quiz.query.get(score.quiz_id)
+    questions = Questions.query.filter_by(quiz_id=quiz.quiz_id).all()
+    user_answers = json.loads(score.user_answers) 
+
+    return render_template('quiz_review.html', score=score, quiz=quiz, questions=questions, user_answers=user_answers)
+
+
+
+@app.route('/user/quiz/attempt/<int:quiz_id>', methods=['GET', 'POST'])
+@login_required
+def attempt_quiz(quiz_id):
+    quiz = Quiz.query.get_or_404(quiz_id)
+    questions = Questions.query.filter_by(quiz_id=quiz_id).all()
+
+    if request.method == 'POST':
+        start_time_str = request.form.get('start_time')
+        if not start_time_str:
+            flash("Start time is missing. Please retry the quiz.", "danger")
+            return redirect(url_for('attempt_quiz', quiz_id=quiz_id))
+
+        start_time = datetime.strptime(start_time_str, "%Y-%m-%d %H:%M:%S")
+        start_time = start_time.replace(tzinfo=IST)  
+
+        end_time = datetime.now(IST) 
+        time_taken = end_time - start_time  
+        time_taken = str(timedelta(seconds=int(time_taken.total_seconds())))
+        time_taken = str(time_taken).split('.')[0]
+        score = 0
+        user_answers = {}
+
+        for question in questions:
+            selected_option = request.form.get(f'q{question.question_id}')
+            correct_option = question.correct_option
+
+            user_answers[str(question.question_id)] = {
+                "selected": int(selected_option) if selected_option else None,
+                "correct": correct_option
+            }
+
+            if selected_option and int(selected_option) == correct_option:
+                score += 1
+
+        new_score = Scores(
+            user_id=session['user_id'],
+            quiz_id=quiz_id,
+            total_scored=score,
+            time_taken=time_taken,
+            user_answers=json.dumps(user_answers)  
+        )
+        db.session.add(new_score)
+        db.session.commit()
+
+        flash(f'Quiz completed! Your score: {score}/{len(questions)}', 'success')
+        return redirect(url_for('quiz_review', score_id=new_score.score_id))
+
+    return render_template('attempt_quiz.html', quiz=quiz, questions=questions)
+
+@app.route('/user/available-quizzes')
+@login_required
+def available_quizzes():
+    subjects = Subject.query.all() 
+    quizzes = Quiz.query.all() 
+    return render_template('available_quizzes.html', subjects=subjects, quizzes=quizzes)
+
+
+
+@app.route('/user/change_password', methods=['GET', 'POST'])
+@login_required
+def change_password():
+    if request.method == 'POST':
+        user = Users.query.get(session['user_id'])
+        current_password = request.form['current_password']
+        new_password = request.form['new_password']
+        
+        if check_password_hash(user.password, current_password):
+            user.password = generate_password_hash(new_password)
+            db.session.commit()
+            flash('Password updated successfully!', 'success')
+            return redirect(url_for('user_profile'))
+        else:
+            flash('Current password is incorrect.', 'error')
+    
+    return render_template('change_password.html')
+
+@app.route('/user/quiz/<int:quiz_id>')
+@login_required
+def view_quiz(quiz_id):
+    quiz = Quiz.query.get_or_404(quiz_id)
+    questions = Questions.query.filter_by(quiz_id=quiz_id).all()
+    return render_template('view_quiz.html', quiz=quiz, questions=questions)
+
 
 @app.route('/logout')
 def logout():

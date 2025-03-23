@@ -1,0 +1,35 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="container mt-4">
+    <h2 class="mb-4">User Dashboard</h2>
+
+    <div class="row">
+        <!-- Sidebar -->
+        <div class="col-md-3">
+            <div class="list-group">
+                <a href="{{ url_for('user_profile') }}" class="list-group-item list-group-item-action">Profile</a>
+                <a href="{{ url_for('user_quizzes') }}" class="list-group-item list-group-item-action">Quiz History</a>
+                <a href="{{ url_for('available_quizzes') }}" class="list-group-item list-group-item-action">Available Quizzes</a>
+            </div>
+        </div>
+
+        <!-- Main Content -->
+        <div class="col-md-9">
+            <h4>Welcome, {{ user.fullname }}</h4>
+
+            <hr>
+            <h4>Upcoming Quizzes</h4>
+            <div class="list-group">
+                {% for quiz in quizzes %}
+                <div class="list-group-item">
+                    <h5>{{ quiz.chapter.name }}</h5>
+                    <p>Date: {{ quiz.date_of_quiz.strftime('%Y-%m-%d %H:%M') }}</p>
+                    <a href="{{ url_for('attempt_quiz', quiz_id=quiz.quiz_id) }}" class="btn btn-primary btn-sm">Attempt</a>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

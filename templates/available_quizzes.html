@@ -1,0 +1,29 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="container mt-4">
+    <h2>Available Quizzes</h2>
+
+    {% for subject in subjects %}
+    <div class="card mb-3">
+        <div class="card-body">
+            <h4>{{ subject.name }}</h4>
+            <p>{{ subject.description }}</p>
+            <h5>Quizzes:</h5>
+            <ul>
+                {% for quiz in quizzes if quiz.chapter.subject_id == subject.subject_id %}
+                <li>
+                    <strong>{{ quiz.chapter.name }}</strong> - 
+                    {{ quiz.date_of_quiz.strftime('%Y-%m-%d %H:%M') }} 
+                    <a href="{{ url_for('attempt_quiz', quiz_id=quiz.quiz_id) }}" class="btn btn-primary btn-sm">Attempt</a>
+                </li>
+                {% endfor %}
+            </ul>
+        </div>
+    </div>
+    {% endfor %}
+
+
+    <a href="{{ url_for('user_dashboard') }}" class="btn btn-secondary mt-3">Back to Dashboard</a>
+</div>
+{% endblock %}
