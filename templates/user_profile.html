@@ -2,45 +2,30 @@
 
 {% block content %}
 <div class="container mt-4">
-    <h2>Quiz Summary - {{ quiz.chapter.name }}</h2>
-    <p><strong>Date Attempted:</strong> {{ score.time_stamp_of_attempt.strftime('%Y-%m-%d %H:%M') }}</p>
-    <p><strong>Time Taken:</strong> {{ score.time_taken }}</p>
+    <h2>User Profile</h2>
+    <div class="card">
+        <div class="card-body">
+            <p><strong>Name:</strong> {{ profile_user.fullname }}</p>
+            <p><strong>Email:</strong> {{ profile_user.email }}</p>
+            <p><strong>Qualification:</strong> {{ profile_user.qualification }}</p>
+            <p><strong>Date of Birth:</strong> {{ profile_user.dob.strftime('%Y-%m-%d') }}</p>
 
-    <!-- Circular Progress Ring -->
-    <div class="text-center">
-        <svg width="160" height="160">
-            <circle cx="80" cy="80" r="70" stroke="#ddd" stroke-width="15" fill="none"></circle>
-            <circle cx="80" cy="80" r="70" stroke="#28a745" stroke-width="15" fill="none" stroke-dasharray="440" stroke-dashoffset="{{ 440 - (440 * score.total_scored / questions|length) }}" stroke-linecap="round"></circle>
-            <text x="80" y="85" font-size="24" text-anchor="middle" fill="#000">{{ score.total_scored }}/{{ questions|length }}</text>
-        </svg>
-        <p><strong>Score:</strong> {{ score.total_scored }}/{{ questions|length }}</p>
+            {% if not current_user.is_admin %}
+                <a href="{{ url_for('change_password') }}" class="btn btn-warning">Change Password</a>
+            {% endif %}
+        </div>
     </div>
 
-    <hr>
-
-    <!-- Detailed Question Report -->
-    {% for question in questions %}
-    <div class="mb-3">
-        <h5>{{ loop.index }}. {{ question.question_statement }}</h5>
-        <ul class="list-group">
-            {% for i in range(1, 5) %}
-            <li class="list-group-item {% if user_answers[question.question_id|string]['selected'] == i %} 
-                                           {% if user_answers[question.question_id|string]['selected'] == user_answers[question.question_id|string]['correct'] %}
-                                               list-group-item-success 
-                                           {% else %}
-                                               list-group-item-danger 
-                                           {% endif %}
-                                       {% endif %}">
-                {{ question['option_' ~ i] }}
-                {% if i == user_answers[question.question_id|string]['correct'] %}
-                <span class="badge bg-success">Correct</span>
-                {% endif %}
-            </li>
-            {% endfor %}
-        </ul>
-    </div>
-    {% endfor %}
-
-    <a href="{{ url_for('user_dashboard') }}" class="btn btn-secondary mt-3">Back to Dashboard</a>
+    {% if current_user.is_admin %}
+        <!-- Admin options -->
+        <a href="{{ url_for('edit_user', user_id=profile_user.user_id) }}" class="btn btn-warning mt-3">Edit User</a>
+        <form method="POST" action="{{ url_for('delete_user', user_id=profile_user.user_id) }}" style="display:inline;">
+            <button type="submit" class="btn btn-danger mt-3">Delete User</button>
+        </form>
+        <a href="{{ url_for('admin_dashboard') }}" class="btn btn-secondary mt-3">Back to Admin Dashboard</a>
+    {% else %}
+        <!-- User option -->
+        <a href="{{ url_for('user_dashboard') }}" class="btn btn-secondary mt-3">Back to Dashboard</a>
+    {% endif %}
 </div>
 {% endblock %}

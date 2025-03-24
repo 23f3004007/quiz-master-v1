@@ -1,0 +1,33 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="container mt-4">
+    <h2>{{ quiz.name }}</h2>
+    <p><strong>Chapter:</strong> {{ quiz.chapter.name }}</p>
+    <p><strong>Subject:</strong> {{ quiz.chapter.subject.name }}</p>
+    <p><strong>Date:</strong> {{ quiz.date_of_quiz.strftime('%Y-%m-%d %H:%M') }}</p>
+    <p><strong>Duration:</strong> {{ quiz.time_duration }}</p>
+    <p>{{ quiz.remarks }}</p>
+
+
+    {% if user.is_admin %}
+        <!-- Admin Options -->
+        <a href="{{ url_for('edit_quiz', quiz_id=quiz.quiz_id) }}" class="btn btn-warning">Edit Quiz</a>
+        <form method="POST" action="{{ url_for('delete_quiz', quiz_id=quiz.quiz_id) }}" style="display:inline;">
+            <button type="submit" class="btn btn-danger">Delete Quiz</button>
+        </form>
+        <a href="{{ url_for('admin_dashboard') }}" class="btn btn-secondary">Back to Dashboard</a>
+    {% else %}
+        <!-- User Options -->
+        <h4>Instructions:</h4>
+        <ul>
+            <li>Ensure a stable internet connection.</li>
+            <li>Read each question carefully before answering.</li>
+            <li>You cannot go back to previous questions once answered.</li>
+            <li>Your answers will be submitted automatically at the end of the timer.</li>
+        </ul>
+        <a href="{{ url_for('attempt_quiz', quiz_id=quiz.quiz_id) }}" class="btn btn-success">Attempt Quiz</a>
+        <a href="{{ url_for('user_dashboard') }}" class="btn btn-secondary">Back to Dashboard</a>
+    {% endif %}
+</div>
+{% endblock %}

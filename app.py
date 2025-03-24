@@ -58,6 +58,7 @@ class Chapters(db.Model):
 class Quiz(db.Model):
     __tablename__ = 'quiz'
     quiz_id = db.Column(db.Integer, primary_key=True)
+    name = db.Column(db.String(150), nullable=False)
     chapter_id = db.Column(db.Integer, db.ForeignKey('chapters.chapter_id'), nullable=False)
     date_of_quiz = db.Column(db.DateTime, nullable=False)
     time_duration = db.Column(db.Interval, nullable=False, default=timedelta(hours=1))
@@ -234,10 +235,12 @@ def delete_chapter(chapter_id):
 @admin_required
 def create_quiz():
     if request.method == 'POST':
+        quiz_name = request.form['quiz_name']
         chapter_id = request.form['chapter_id']
         date_of_quiz = datetime.strptime(request.form['date_of_quiz'], '%Y-%m-%dT%H:%M')
         time_duration = timedelta(minutes=int(request.form['duration']))
         new_quiz = Quiz(
+            name=quiz_name,
             chapter_id=chapter_id,
             date_of_quiz=date_of_quiz,
             time_duration=time_duration,
@@ -321,20 +324,113 @@ def delete_question(question_id):
     flash('Question deleted successfully!', 'success')
     return redirect(url_for('edit_quiz', quiz_id=quiz_id))
 
+@app.route('/admin/users')
+@admin_required
+def manage_users():
+    users = Users.query.all()
+    return render_template('admin_users.html', users=users)
+
+@app.route('/admin/user/edit/<int:user_id>', methods=['GET', 'POST'])
+@admin_required
+def edit_user(user_id):
+    user = Users.query.get_or_404(user_id)
+
+    if request.method == 'POST':
+        user.fullname = request.form['fullname']
+        user.email = request.form['email']
+        user.qualification = request.form['qualification']
+        db.session.commit()
+        flash('User updated successfully!', 'success')
+        return redirect(url_for('manage_users'))
+
+    return render_template('edit_user.html', user=user)
+
+@app.route('/admin/user/delete/<int:user_id>', methods=['POST'])
+@admin_required
+def delete_user(user_id):
+    user = Users.query.get_or_404(user_id)
+    db.session.delete(user)
+    db.session.commit()
+    flash('User deleted successfully!', 'success')
+    return redirect(url_for('manage_users'))
+
+
+@app.route('/admin/search', methods=['GET'])
+@login_required
+@admin_required
+def admin_search():
+    query = request.args.get('q', '').strip().lower()
+
+    # Search Users (by name or email)
+    users = Users.query.filter(
+        (Users.fullname.ilike(f"%{query}%")) | 
+        (Users.email.ilike(f"%{query}%"))
+    ).all()
+
+    # Search Subjects
+    subjects = Subject.query.filter(Subject.name.ilike(f"%{query}%")).all()
+
+    # Search Quizzes
+    quizzes = Quiz.query.filter(Quiz.name.ilike(f"%{query}%")).all()
+
+    # Search Questions
+    questions = Questions.query.filter(Questions.question_statement.ilike(f"%{query}%")).all()
+
+    return render_template(
+        'admin_search_results.html',
+        query=query,
+        users=users,
+        subjects=subjects,
+        quizzes=quizzes,
+        questions=questions
+    )
+
+@app.route('/subject/<int:subject_id>')
+@login_required
+def subject_page(subject_id):
+    subject = Subject.query.get_or_404(subject_id)
+    chapters = Chapters.query.filter_by(subject_id=subject_id).all()
+    quizzes = Quiz.query.join(Chapters).filter(Chapters.subject_id == subject_id).all()
+    user = Users.query.get(session['user_id'])  # Fetch user from session
+
+    return render_template('subject_page.html', subject=subject, chapters=chapters, quizzes=quizzes, user=user)
+
+
+@app.route('/quiz/<int:quiz_id>')
+@login_required
+def quiz_page(quiz_id):
+    quiz = Quiz.query.get_or_404(quiz_id)
+    user = Users.query.get(session['user_id'])
+    return render_template('quiz_page.html', quiz=quiz,user=user)
+
+
 #user
 @app.route('/user/dashboard')
 @login_required
 def user_dashboard():
     user = Users.query.get(session['user_id'])  
-    quizzes = Quiz.query.all() 
-    return render_template('user_dashboard.html', user=user, quizzes=quizzes)
+    subjects = Subject.query.all() 
+    quizzes = Quiz.query.filter(Quiz.date_of_quiz >= datetime.now()).order_by(Quiz.date_of_quiz).all()
+    return render_template(
+        'user_dashboard.html',
+        user=user,
+        subjects=subjects,
+        quizzes=quizzes
+    )
 
 
-@app.route('/user/profile')
+@app.route('/user/profile/<int:user_id>')
 @login_required
-def user_profile():
-    user = Users.query.get(session['user_id'])
-    return render_template('user_profile.html', user=user)
+def user_profile(user_id):
+    profile_user = Users.query.get_or_404(user_id)
+    current_user = Users.query.get(session['user_id'])  # Fetch logged-in user
+
+    return render_template(
+        'user_profile.html',
+        profile_user=profile_user,
+        current_user=current_user
+    )
+
 
 @app.route('/user/quizzes')
 @login_required
@@ -353,6 +449,38 @@ def quiz_review(score_id):
 
     return render_template('quiz_review.html', score=score, quiz=quiz, questions=questions, user_answers=user_answers)
 
+@app.route('/user/search', methods=['GET'])
+@login_required
+def user_search():
+    query = request.args.get('q', '').strip().lower()  # Convert to lowercase for case-insensitive search
+
+    # Search subjects matching the query
+    subjects = Subject.query.filter(Subject.name.ilike(f"%{query}%")).all()
+    
+    # Get subject IDs for filtering quizzes
+    subject_ids = [subject.subject_id for subject in subjects]
+
+    # Get quizzes under the found subjects
+    quizzes_in_subjects = Quiz.query.join(Chapters).filter(Chapters.subject_id.in_(subject_ids)).all()
+
+    # Get quizzes matching the query (by name)
+    quizzes_by_name = Quiz.query.filter(Quiz.name.ilike(f"%{query}%")).all()
+
+    # Merge both lists and remove duplicates
+    all_quizzes = {quiz.quiz_id: quiz for quiz in (quizzes_in_subjects + quizzes_by_name)}.values()
+
+    # Separate quizzes under subjects from standalone quizzes
+    quizzes_under_subjects = {quiz.quiz_id: quiz for quiz in quizzes_in_subjects}
+    other_quizzes = [quiz for quiz in all_quizzes if quiz.quiz_id not in quizzes_under_subjects]
+
+    return render_template(
+        'user_search_results.html',
+        query=query,
+        subjects=subjects,
+        quizzes_under_subjects=quizzes_under_subjects.values(),
+        other_quizzes=other_quizzes
+    )
+
 
 
 @app.route('/user/quiz/attempt/<int:quiz_id>', methods=['GET', 'POST'])
@@ -369,10 +497,10 @@ def attempt_quiz(quiz_id):
 
         # Convert start_time to a timezone-aware datetime
         start_time = datetime.strptime(start_time_str, "%Y-%m-%d %H:%M:%S")
-        start_time = start_time.replace(tzinfo=IST)  # ✅ Make it offset-aware
+        start_time = start_time.replace(tzinfo=IST)
 
-        end_time = datetime.now(IST)  # ✅ Already offset-aware
-        time_taken = end_time - start_time  # ✅ Now both are offset-aware
+        end_time = datetime.now(IST)
+        time_taken = end_time - start_time
 
         score = 0
         user_answers = {}
@@ -393,8 +521,8 @@ def attempt_quiz(quiz_id):
             user_id=session['user_id'],
             quiz_id=quiz_id,
             total_scored=score,
-            time_taken=time_taken,  # ✅ Now stored as timedelta
-            user_answers=json.dumps(user_answers)  # ✅ Stores answers as JSON
+            time_taken=time_taken,  
+            user_answers=json.dumps(user_answers)  
         )
         db.session.add(new_score)
         db.session.commit()

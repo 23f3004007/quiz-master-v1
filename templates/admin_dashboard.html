@@ -1,4 +1,3 @@
-<!-- templates/admin_dashboard.html -->
 {% extends "base.html" %}
 
 {% block content %}
@@ -6,7 +5,6 @@
     <h2 class="mb-4">Admin Dashboard</h2>
     
     <div class="row">
-        <!-- Navigation Sidebar -->
         <div class="col-md-3">
             <div class="list-group">
                 <a href="#subjects" class="list-group-item list-group-item-action active">Subjects</a>
@@ -16,9 +14,15 @@
             </div>
         </div>
 
-        <!-- Main Content -->
         <div class="col-md-9">
-            <!-- Subjects Section -->
+            <div class="container-fluid mt-3">
+                <form action="{{ url_for('admin_search') }}" method="GET" class="mb-3">
+                    <div class="input-group">
+                        <input type="text" name="q" class="form-control" placeholder="Search users, subjects, quizzes, questions..." required>
+                        <button type="submit" class="btn btn-primary">Search</button>
+                    </div>
+                </form>
+            </div>            
             <div id="subjects" class="mb-5">
                 <div class="d-flex justify-content-between align-items-center mb-3">
                     <h4>Subjects</h4>
@@ -33,12 +37,7 @@
                                 <p class="mb-0">{{ subject.description }}</p>
                             </div>
                             <div>
-                                <a href="{{ url_for('edit_subject', subject_id=subject.subject_id) }}" 
-                                   class="btn btn-warning btn-sm">Edit</a>
-                                <form method="POST" action="{{ url_for('delete_subject', subject_id=subject.subject_id) }}" 
-                                      class="d-inline">
-                                    <button type="submit" class="btn btn-danger btn-sm">Delete</button>
-                                </form>
+                                <a href="{{ url_for('subject_page', subject_id=subject.subject_id) }}" class="btn btn-info btn-sm">View Subject</a>
                             </div>
                         </div>
                     </div>
@@ -46,7 +45,6 @@
                 </div>
             </div>
 
-            <!-- Chapters Section -->
             <div id="chapters" class="mb-5">
                 <div class="d-flex justify-content-between align-items-center mb-3">
                     <h4>Chapters</h4>
@@ -62,12 +60,7 @@
                                 <small class="text-muted">Subject: {{ chapter.subject.name }}</small>
                             </div>
                             <div>
-                                <a href="{{ url_for('edit_chapter', chapter_id=chapter.chapter_id) }}" 
-                                   class="btn btn-warning btn-sm">Edit</a>
-                                <form method="POST" action="{{ url_for('delete_chapter', chapter_id=chapter.chapter_id) }}" 
-                                      class="d-inline">
-                                    <button type="submit" class="btn btn-danger btn-sm">Delete</button>
-                                </form>
+                                <a href="{{ url_for('subject_page', subject_id=chapter.subject_id) }}" class="btn btn-info btn-sm">View Subject</a>
                             </div>
                         </div>
                     </div>
@@ -75,7 +68,6 @@
                 </div>
             </div>
 
-            <!-- Quizzes Section -->
             <div id="quizzes" class="mb-5">
                 <div class="d-flex justify-content-between align-items-center mb-3">
                     <h4>Quizzes</h4>
@@ -86,19 +78,17 @@
                     <div class="col-md-6 mb-3">
                         <div class="card">
                             <div class="card-body">
-                                <h5 class="card-title">{{ quiz.chapter.name }}</h5>
+                                <h5 class="card-title">{{ quiz.name }}</h5>
                                 <p class="card-text">
                                     <small class="text-muted">
+                                        Chapter: {{ quiz.chapter.name }}<br>
+                                        Subject: {{ quiz.chapter.subject.name }}<br>
                                         Date: {{ quiz.date_of_quiz.strftime('%Y-%m-%d %H:%M') }}<br>
                                         Duration: {{ quiz.time_duration }}
                                     </small>
                                 </p>
                                 <div class="btn-group">
-                                    <a href="{{ url_for('edit_quiz', quiz_id=quiz.quiz_id) }}" 
-                                       class="btn btn-warning btn-sm">Edit</a>
-                                    <form method="POST" action="{{ url_for('delete_quiz', quiz_id=quiz.quiz_id) }}">
-                                        <button type="submit" class="btn btn-danger btn-sm">Delete</button>
-                                    </form>
+                                    <a href="{{ url_for('quiz_page', quiz_id=quiz.quiz_id) }}" class="btn btn-primary btn-sm">View Quiz</a>
                                 </div>
                             </div>
                         </div>
@@ -107,9 +97,11 @@
                 </div>
             </div>
 
-            <!-- Users Section -->
             <div id="users">
-                <h4>Registered Users</h4>
+                <div class="d-flex justify-content-between align-items-center mb-3">
+                    <h4>Registered Users</h4>
+                    <a href="{{ url_for('manage_users') }}" class="btn btn-success btn-sm">Manage Users</a>
+                </div>
                 <table class="table table-striped">
                     <thead>
                         <tr>
@@ -117,6 +109,7 @@
                             <th>Email</th>
                             <th>Qualification</th>
                             <th>Date of Birth</th>
+                            <th></th>
                         </tr>
                     </thead>
                     <tbody>
@@ -126,6 +119,7 @@
                             <td>{{ user.email }}</td>
                             <td>{{ user.qualification }}</td>
                             <td>{{ user.dob.strftime('%Y-%m-%d') }}</td>
+                            <td><a href="{{ url_for('user_profile', user_id=user.user_id) }}" class="btn btn-info btn-sm">View Profile</a></td>
                         </tr>
                         {% endfor %}
                     </tbody>
