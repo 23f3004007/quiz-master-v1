@@ -15,7 +15,7 @@
                 <li>
                     <strong>{{ quiz.chapter.name }}</strong> - 
                     {{ quiz.date_of_quiz.strftime('%Y-%m-%d %H:%M') }} 
-                    <a href="{{ url_for('attempt_quiz', quiz_id=quiz.quiz_id) }}" class="btn btn-primary btn-sm">Attempt</a>
+                    <a href="{{ url_for('quiz_page', quiz_id=quiz.quiz_id) }}" class="btn btn-primary btn-sm">Go to Quiz</a>
                 </li>
                 {% endfor %}
             </ul>

@@ -1,0 +1,109 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="container mt-4">
+    <h2>Admin Summary</h2>
+
+    <div class="card mb-4">
+        <div class="card-body">
+            <h4>Overall Summary</h4>
+            <p><strong>Total Quizzes:</strong> {{ total_quizzes }}</p>
+            <p><strong>Total Participants:</strong> {{ total_participants }}</p>
+            <p><strong>Average Score:</strong> {{ "%.2f"|format(overall_avg_score) }}</p>
+        </div>
+    </div>
+    <div class="row">
+        <div class="col-md-6">
+            <canvas id="quizPerformanceChart"></canvas>
+        </div>
+        <div class="col-md-6">
+            <canvas id="userPerformanceChart"></canvas>
+        </div>
+    </div>
+    <h4>Quiz Performance Summary</h4>
+    <table class="table">
+        <thead>
+            <tr>
+                <th>Quiz Name</th>
+                <th>Total Attempts</th>
+                <th>Average Score</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for quiz in quiz_summaries %}
+            <tr>
+                <td>{{ quiz.name }}</td>
+                <td>{{ quiz.attempts }}</td>
+                <td>{{ "%.2f"|format(quiz.avg_score) }}</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+
+    <h4>Participant Performance Summary</h4>
+    <table class="table">
+        <thead>
+            <tr>
+                <th>Participant</th>
+                <th>Quizzes Attempted</th>
+                <th>Average Score</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for user in user_summaries %}
+            <tr>
+                <td>{{ user.fullname }} ({{ user.email }})</td>
+                <td>{{ user.total_attempts }}</td>
+                <td>{{ "%.2f"|format(user.avg_score) }}</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+    <a href="{{ url_for('admin_dashboard') }}" class="btn btn-secondary mt-3">Back to Dashboard</a>
+</div>
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+    var quizChartCtx = document.getElementById('quizPerformanceChart').getContext('2d');
+    var quizPerformanceChart = new Chart(quizChartCtx, {
+        type: 'bar',
+        data: {
+            labels: {{ quiz_labels | tojson }},
+            datasets: [{
+                label: 'Average Score',
+                data: {{ quiz_avg_scores | tojson }},
+                backgroundColor: 'rgba(54, 162, 235, 0.6)',
+                borderColor: 'rgba(54, 162, 235, 1)',
+                borderWidth: 1
+            }]
+        },
+        options: {
+            responsive: true,
+            scales: {
+                y: { beginAtZero: true }
+            }
+        }
+    });
+
+    
+    var userChartCtx = document.getElementById('userPerformanceChart').getContext('2d');
+    var userPerformanceChart = new Chart(userChartCtx, {
+        type: 'bar',
+        data: {
+            labels: {{ user_labels | tojson }},
+            datasets: [{
+                label: 'Average Score',
+                data: {{ user_avg_scores | tojson }},
+                backgroundColor: 'rgba(255, 99, 132, 0.6)',
+                borderColor: 'rgba(255, 99, 132, 1)',
+                borderWidth: 1
+            }]
+        },
+        options: {
+            responsive: true,
+            scales: {
+                y: { beginAtZero: true }
+            }
+        }
+    });
+</script>
+{% endblock %}

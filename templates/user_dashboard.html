@@ -24,7 +24,35 @@
                     </div>
                 </form>
             </div>
+            <hr>
+            <h4>Your Quiz Performance</h4>
+            <canvas id="quizPerformanceChart"></canvas>
 
+            <script>
+                document.addEventListener("DOMContentLoaded", function () {
+                    let ctx = document.getElementById('quizPerformanceChart').getContext('2d');
+                    let quizLabels = {{ quiz_names | tojson }};
+                    let quizScores = {{ quiz_scores | tojson }};
+                    new Chart(ctx, {
+                        type: 'bar',
+                        data: {
+                            labels: quizLabels,
+                            datasets: [{
+                                label: 'Your Scores',
+                                data: quizScores,
+                                backgroundColor: 'rgba(75, 192, 192, 0.6)',
+                                borderColor: 'rgba(75, 192, 192, 1)',
+                                borderWidth: 1
+                            }]
+                        },
+                        options: {
+                            scales: {
+                                y: { beginAtZero: true }
+                            }
+                        }
+                    });
+                });
+            </script>
             <hr>
             <h4>Upcoming Quizzes</h4>
             <div class="list-group">

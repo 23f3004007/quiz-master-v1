@@ -156,6 +156,86 @@ def admin_dashboard():
                          subjects=subjects,
                          chapters=chapters,
                          quizzes=quizzes)
+    
+@app.route('/admin/summary')
+@admin_required
+def admin_summary():
+    quizzes = Quiz.query.all()
+    users = Users.query.all()
+    total_quizzes = len(quizzes)
+
+    total_participants = 0
+    overall_total_score = 0
+    overall_attempts = 0
+    quiz_summaries = []
+    user_summaries = []
+    quiz_labels = []
+    quiz_avg_scores = []
+    user_labels = []
+    user_avg_scores = []
+    for quiz in quizzes:
+        attempts = Scores.query.filter_by(quiz_id=quiz.quiz_id).count()
+        total_score = db.session.query(db.func.sum(Scores.total_scored)).filter(Scores.quiz_id == quiz.quiz_id).scalar() or 0
+        avg_score = total_score / attempts if attempts > 0 else 0
+        
+        quiz_summaries.append({
+            "name": quiz.name,
+            "attempts": attempts,
+            "avg_score": avg_score
+        })
+        quiz_labels.append(quiz.name)
+        quiz_avg_scores.append(avg_score)
+
+    for user in users:
+        user_attempts = Scores.query.filter_by(user_id=user.user_id).count()
+        user_total_score = db.session.query(db.func.sum(Scores.total_scored)).filter(Scores.user_id == user.user_id).scalar() or 0
+        user_avg_score = user_total_score / user_attempts if user_attempts > 0 else 0
+        
+        if user_attempts > 0:
+            total_participants += 1
+            overall_total_score += user_total_score
+            overall_attempts += user_attempts
+
+            user_summaries.append({
+                "fullname": user.fullname,
+                "email": user.email,
+                "total_attempts": user_attempts,
+                "avg_score": user_avg_score
+            })
+
+            
+            user_labels.append(user.fullname)
+            user_avg_scores.append(user_avg_score)
+
+    overall_avg_score = overall_total_score / overall_attempts if overall_attempts > 0 else 0
+
+    return render_template('admin_summary.html', 
+        total_quizzes=total_quizzes, 
+        total_participants=total_participants, 
+        overall_avg_score=overall_avg_score, 
+        quiz_summaries=quiz_summaries, 
+        user_summaries=user_summaries,
+        quiz_labels=quiz_labels, 
+        quiz_avg_scores=quiz_avg_scores,
+        user_labels=user_labels, 
+        user_avg_scores=user_avg_scores
+    )
+
+
+    
+    
+@app.route('/admin/manage_subjects')
+@admin_required
+def manage_subjects():
+    subjects = Subject.query.all()
+    return render_template('manage_subjects.html', subjects=subjects)
+
+@app.route('/admin/manage_quizzes')
+@admin_required
+def manage_quizzes():
+    quizzes = Quiz.query.all()
+    return render_template('manage_quizzes.html', quizzes=quizzes)
+
 # SUBJECT ROUTES
 @app.route('/admin/subject/create', methods=['GET', 'POST'])
 @admin_required
@@ -237,7 +317,7 @@ def delete_chapter(chapter_id):
     return redirect(url_for('subject_page', subject_id=subject_id))
 
 
-#quiz
+#quiz routes
 @app.route('/admin/quiz/create', methods=['GET', 'POST'])
 @admin_required
 def create_quiz():
@@ -304,7 +384,7 @@ def delete_quiz(quiz_id):
     flash('Quiz deleted successfully!', 'success')
     return redirect(url_for('admin_dashboard'))
 
-#question
+#question routes
 @app.route('/admin/question/create/<int:quiz_id>', methods=['GET', 'POST'])
 @admin_required
 def create_question(quiz_id):
@@ -436,18 +516,23 @@ def quiz_page(quiz_id):
     return render_template('quiz_page.html', quiz=quiz,user=user)
 
 
-#user
+#user routes
 @app.route('/user/dashboard')
 @login_required
 def user_dashboard():
     user = Users.query.get(session['user_id'])  
     subjects = Subject.query.all() 
     quizzes = Quiz.query.filter(Quiz.date_of_quiz >= datetime.now()).order_by(Quiz.date_of_quiz).all()
+    scores = Scores.query.filter_by(user_id=user.user_id).all()
+    quiz_names = [s.quiz.name for s in scores]
+    quiz_scores = [s.total_scored for s in scores]
     return render_template(
         'user_dashboard.html',
         user=user,
         subjects=subjects,
-        quizzes=quizzes
+        quizzes=quizzes,
+        quiz_names=quiz_names, 
+        quiz_scores=quiz_scores
     )
 
 

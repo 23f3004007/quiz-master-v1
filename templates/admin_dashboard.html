@@ -7,10 +7,10 @@
     <div class="row">
         <div class="col-md-3">
             <div class="list-group">
-                <a href="#subjects" class="list-group-item list-group-item-action active">Subjects</a>
-                <a href="#chapters" class="list-group-item list-group-item-action">Chapters</a>
-                <a href="#quizzes" class="list-group-item list-group-item-action">Quizzes</a>
-                <a href="#users" class="list-group-item list-group-item-action">Users</a>
+                <a href="{{ url_for('manage_users') }}" class="list-group-item list-group-item-action">Manage Users</a>
+                <a href="{{ url_for('manage_subjects') }}" class="list-group-item list-group-item-action">Manage Subjects</a>
+                <a href="{{ url_for('manage_quizzes') }}" class="list-group-item list-group-item-action">Manage Quizzes</a>
+                <a href="{{ url_for('admin_summary') }}" class="list-group-item list-group-item-action">Summary</a> 
             </div>
         </div>
 
