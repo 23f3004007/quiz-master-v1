@@ -1,9 +1,8 @@
-<!-- templates/create_question.html -->
 {% extends "base.html" %}
 
 {% block content %}
 <div class="container mt-4">
-    <h3>Add Question to {{ quiz.chapter.name }}</h3>
+    <h3>Add Question to {{ quiz.name }}</h3>
     <form method="POST">
         <div class="mb-3">
             <label class="form-label">Question</label>
@@ -30,7 +29,7 @@
             <input type="number" class="form-control" name="correct_option" min="1" max="4" required>
         </div>
         <button type="submit" class="btn btn-primary">Add Question</button>
-        <a href="{{ url_for('edit_quiz', quiz_id=quiz.quiz_id) }}" class="btn btn-secondary">Cancel</a>
+        <a href="{{ url_for('subject_page', subject_id=quiz.chapter.subject_id) }}" class="btn btn-success">Finish</a>
     </form>
 </div>
 {% endblock %}

@@ -2,7 +2,10 @@
 
 {% block content %}
 <div class="container mt-4">
-    <h2>Attempt Quiz: {{ quiz.chapter.name }}</h2>
+    <h2>Attempt Quiz: {{ quiz.name }}</h2>
+    <p><strong>Chapter:</strong> {{ quiz.chapter.name }}</p>
+    <p><strong>Subject:</strong> {{ quiz.chapter.subject.name }}</p>
+    <p><strong>Quiz Date:</strong> {{ quiz.date_of_quiz.strftime('%Y-%m-%d %H:%M') }}</p>
     <p><strong>Time Remaining:</strong> <span id="timer"></span></p>
 
     <form method="POST" id="quiz-form">
@@ -22,9 +25,13 @@
         <button type="submit" class="btn btn-success">Submit Quiz</button>
     </form>
 </div>
+
 <script>
-    document.getElementById("start_time").value = new Date().toISOString().slice(0, 19).replace("T", " ");
-    
+    if (!localStorage.getItem("quiz_start_time")) {
+        localStorage.setItem("quiz_start_time", new Date().toISOString());
+    }
+    document.getElementById("start_time").value = localStorage.getItem("quiz_start_time");
+
     let timeLeft = {{ quiz.time_duration.total_seconds() }};
     function updateTimer() {
         let minutes = Math.floor(timeLeft / 60);
@@ -37,4 +44,5 @@
     }
     setInterval(updateTimer, 1000);
 </script>
+
 {% endblock %}

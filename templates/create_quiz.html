@@ -1,10 +1,9 @@
-<!-- templates/create_quiz.html -->
 {% extends "base.html" %}
 
 {% block content %}
 <div class="container mt-4">
     <h3>Create New Quiz</h3>
-    <form method="POST">
+    <form method="POST" id="quizForm">
         <div class="mb-3">
             <label class="form-label">Quiz Name</label>
             <input type="text" class="form-control" name="quiz_name" required>
@@ -19,12 +18,16 @@
             </select>
         </div>
         <div class="mb-3">
-            <label class="form-label">Date and Time</label>
-            <input type="datetime-local" class="form-control" name="date_of_quiz" required>
+            <label class="form-label">Start Date and Time</label>
+            <input type="datetime-local" class="form-control" name="date_of_quiz" id="date_of_quiz" required>
+        </div>
+        <div class="mb-3">
+            <label class="form-label">End Date and Time</label>
+            <input type="datetime-local" class="form-control" name="end_time" id="end_time" required>
         </div>
         <div class="mb-3">
             <label class="form-label">Duration (minutes)</label>
-            <input type="number" class="form-control" name="duration" min="1" value="60" required>
+            <input type="number" class="form-control" name="duration" id="duration" min="1" value="60" required>
         </div>
         <div class="mb-3">
             <label class="form-label">Remarks</label>
@@ -34,4 +37,31 @@
         <a href="{{ url_for('admin_dashboard') }}" class="btn btn-secondary">Cancel</a>
     </form>
 </div>
+
+<script>
+    document.getElementById("quizForm").addEventListener("submit", function(event) {
+        let quizStartTime = new Date(document.getElementById("date_of_quiz").value);
+        let quizEndTime = new Date(document.getElementById("end_time").value);
+        let now = new Date();
+        let duration = parseInt(document.getElementById("duration").value);
+
+        if (quizStartTime <= now) {
+            alert("Quiz must be scheduled for a future time.");
+            event.preventDefault();
+            return;
+        }
+
+        if (quizEndTime <= quizStartTime) {
+            alert("End time must be after the start time.");
+            event.preventDefault();
+            return;
+        }
+
+        let minAllowedEndTime = new Date(quizStartTime.getTime() + (duration + 10) * 60000);
+        if (quizEndTime < minAllowedEndTime) {
+            alert("End time must be at least 10 minutes more than the quiz duration.");
+            event.preventDefault();
+        }
+    });
+</script>
 {% endblock %}

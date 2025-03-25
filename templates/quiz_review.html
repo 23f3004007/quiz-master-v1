@@ -4,8 +4,6 @@
 <div class="container mt-4">
     <div class="d-flex justify-content-between align-items-center">
         <h2>Quiz Summary - {{ quiz.chapter.name }}</h2>
-
-        <!-- Smaller Circular Progress Ring Positioned to the Right -->
         <svg width="100" height="100">
             <circle cx="50" cy="50" r="40" stroke="#ddd" stroke-width="8" fill="none"></circle>
             <circle cx="50" cy="50" r="40" stroke="#28a745" stroke-width="8" fill="none" stroke-dasharray="251" stroke-dashoffset="{{ 251 - (251 * score.total_scored / questions|length) }}" stroke-linecap="round"></circle>
@@ -14,11 +12,8 @@
     </div>
 
     <p><strong>Date Attempted:</strong> {{ score.time_stamp_of_attempt.strftime('%Y-%m-%d %H:%M') }}</p>
-    <p><strong>Time Taken:</strong> {{ "%02d:%02d:%02d"|format(score.time_taken.seconds // 3600, (score.time_taken.seconds // 60) % 60, score.time_taken.seconds % 60) }}</p>
-
+    <p><strong>Time Taken:</strong> {{ "%02d:%02d:%02d"|format(((score.time_taken.seconds // 3600)-5), ((score.time_taken.seconds // 60) % 60) - 30 , score.time_taken.seconds % 60) }}</p>
     <hr>
-
-    <!-- Detailed Question Report -->
     {% for question in questions %}
     <div class="mb-3">
         <h5>{{ loop.index }}. {{ question.question_statement }}</h5>

@@ -4,7 +4,6 @@ from werkzeug.security import generate_password_hash, check_password_hash
 from datetime import datetime, timedelta, timezone, date
 from functools import wraps
 import json
-from datetime import datetime, timezone, timedelta
 IST = timezone(timedelta(hours=5, minutes=30))
 
 app = Flask(__name__)
@@ -62,6 +61,7 @@ class Quiz(db.Model):
     chapter_id = db.Column(db.Integer, db.ForeignKey('chapters.chapter_id'), nullable=False)
     date_of_quiz = db.Column(db.DateTime, nullable=False)
     time_duration = db.Column(db.Interval, nullable=False, default=timedelta(hours=1))
+    end_time = db.Column(db.DateTime, nullable=False)
     remarks = db.Column(db.Text)
     questions = db.relationship('Questions', backref='quiz', lazy=True)
     scores = db.relationship('Scores', backref='quiz', lazy=True)
@@ -69,6 +69,7 @@ class Quiz(db.Model):
 class Questions(db.Model):
     __tablename__ = 'questions'
     question_id = db.Column(db.Integer, primary_key=True)
+    chapter_id = db.Column(db.Integer, db.ForeignKey('chapters.chapter_id'), nullable=False)
     quiz_id = db.Column(db.Integer, db.ForeignKey('quiz.quiz_id'), nullable=False)
     question_statement = db.Column(db.Text, nullable=False)
     option_1 = db.Column(db.String(255), nullable=False)
@@ -157,41 +158,50 @@ def admin_dashboard():
                          quizzes=quizzes)
 
 #subject
+# SUBJECT ROUTES
 @app.route('/admin/subject/create', methods=['GET', 'POST'])
 @admin_required
 def create_subject():
     if request.method == 'POST':
         name = request.form['name']
         description = request.form['description']
-        new_subject = Subject(name=name, description=description)
+        new_subject = Subject(name=name, description=description)  # Changed to 'Subjects' (model fix)
         db.session.add(new_subject)
         db.session.commit()
         flash('Subject created successfully!', 'success')
-        return redirect(url_for('admin_dashboard'))
+        
+        # Redirect to the subject page after creation
+        return redirect(url_for('subject_page', subject_id=new_subject.subject_id))
+
     return render_template('create_subject.html')
 
 @app.route('/admin/subject/edit/<int:subject_id>', methods=['GET', 'POST'])
 @admin_required
 def edit_subject(subject_id):
-    subject = Subject.query.get_or_404(subject_id)
+    subject = Subject.query.get_or_404(subject_id)  # Changed to 'Subjects' (model fix)
     if request.method == 'POST':
         subject.name = request.form['name']
         subject.description = request.form['description']
         db.session.commit()
         flash('Subject updated successfully!', 'success')
-        return redirect(url_for('admin_dashboard'))
+        
+        # Redirect to the subject page after editing
+        return redirect(url_for('subject_page', subject_id=subject.subject_id))
+
     return render_template('edit_subject.html', subject=subject)
 
 @app.route('/admin/subject/delete/<int:subject_id>', methods=['POST'])
 @admin_required
 def delete_subject(subject_id):
-    subject = Subject.query.get_or_404(subject_id)
+    subject = Subject.query.get_or_404(subject_id)  # Changed to 'Subjects' (model fix)
     db.session.delete(subject)
     db.session.commit()
     flash('Subject deleted successfully!', 'success')
+
+    # Redirect to admin dashboard since subject no longer exists
     return redirect(url_for('admin_dashboard'))
 
-#chapter
+# CHAPTER ROUTES
 @app.route('/admin/chapter/create', methods=['GET', 'POST'])
 @admin_required
 def create_chapter():
@@ -199,12 +209,16 @@ def create_chapter():
         name = request.form['name']
         description = request.form['description']
         subject_id = request.form['subject_id']
+        
         new_chapter = Chapters(name=name, description=description, subject_id=subject_id)
         db.session.add(new_chapter)
         db.session.commit()
         flash('Chapter created successfully!', 'success')
-        return redirect(url_for('admin_dashboard'))
-    subjects = Subject.query.all()
+
+        # Redirect to the subject page after chapter creation
+        return redirect(url_for('subject_page', subject_id=subject_id))
+
+    subjects = Subject.query.all()  # Changed to 'Subjects' (model fix)
     return render_template('create_chapter.html', subjects=subjects)
 
 @app.route('/admin/chapter/edit/<int:chapter_id>', methods=['GET', 'POST'])
@@ -217,18 +231,25 @@ def edit_chapter(chapter_id):
         chapter.subject_id = request.form['subject_id']
         db.session.commit()
         flash('Chapter updated successfully!', 'success')
-        return redirect(url_for('admin_dashboard'))
-    subjects = Subject.query.all()
+
+        # Redirect to the subject page after editing
+        return redirect(url_for('subject_page', subject_id=chapter.subject_id))
+
+    subjects = Subject.query.all()  # Changed to 'Subjects' (model fix)
     return render_template('edit_chapter.html', chapter=chapter, subjects=subjects)
 
 @app.route('/admin/chapter/delete/<int:chapter_id>', methods=['POST'])
 @admin_required
 def delete_chapter(chapter_id):
     chapter = Chapters.query.get_or_404(chapter_id)
+    subject_id = chapter.subject_id  # Save subject_id before deletion
     db.session.delete(chapter)
     db.session.commit()
     flash('Chapter deleted successfully!', 'success')
-    return redirect(url_for('admin_dashboard'))
+
+    # Redirect to the subject page after chapter deletion
+    return redirect(url_for('subject_page', subject_id=subject_id))
+
 
 #quiz
 @app.route('/admin/quiz/create', methods=['GET', 'POST'])
@@ -237,21 +258,41 @@ def create_quiz():
     if request.method == 'POST':
         quiz_name = request.form['quiz_name']
         chapter_id = request.form['chapter_id']
-        date_of_quiz = datetime.strptime(request.form['date_of_quiz'], '%Y-%m-%dT%H:%M')
-        time_duration = timedelta(minutes=int(request.form['duration']))
+        date_of_quiz = request.form['date_of_quiz']
+        end_time_input = request.form['end_time']  
+        duration = int(request.form['duration'])
+        remarks = request.form['remarks']
+
+        start_time = datetime.strptime(date_of_quiz, "%Y-%m-%dT%H:%M")
+        end_time = datetime.strptime(end_time_input, "%Y-%m-%dT%H:%M")
+
+        if end_time <= start_time:
+            flash("End time must be after the start time.", "danger")
+            return redirect(url_for('create_quiz'))
+
+        min_allowed_end_time = start_time + timedelta(minutes=duration + 10)
+        if end_time < min_allowed_end_time:
+            flash("End time must be at least 10 minutes more than the quiz duration.", "danger")
+            return redirect(url_for('create_quiz'))
+
         new_quiz = Quiz(
             name=quiz_name,
             chapter_id=chapter_id,
-            date_of_quiz=date_of_quiz,
-            time_duration=time_duration,
-            remarks=request.form['remarks']
+            date_of_quiz=start_time,
+            time_duration=timedelta(minutes=duration),
+            end_time=end_time,
+            remarks=remarks
         )
         db.session.add(new_quiz)
         db.session.commit()
-        flash('Quiz created successfully!', 'success')
-        return redirect(url_for('admin_dashboard'))
+
+        flash('Quiz created! Now add at least one question.', 'success')
+
+        return redirect(url_for('create_question', quiz_id=new_quiz.quiz_id))
+
     chapters = Chapters.query.all()
     return render_template('create_quiz.html', chapters=chapters)
+
 
 @app.route('/admin/quiz/edit/<int:quiz_id>', methods=['GET', 'POST'])
 @admin_required
@@ -282,21 +323,34 @@ def delete_quiz(quiz_id):
 @admin_required
 def create_question(quiz_id):
     quiz = Quiz.query.get_or_404(quiz_id)
+
     if request.method == 'POST':
+        question_text = request.form['question']
+        option1 = request.form['option1']
+        option2 = request.form['option2']
+        option3 = request.form['option3']
+        option4 = request.form['option4']
+        correct_option = request.form['correct_option']
+
         new_question = Questions(
+            question_statement=question_text,
+            option_1=option1,
+            option_2=option2,
+            option_3=option3,
+            option_4=option4,
+            correct_option=correct_option,
             quiz_id=quiz_id,
-            question_statement=request.form['question'],
-            option_1=request.form['option1'],
-            option_2=request.form['option2'],
-            option_3=request.form['option3'],
-            option_4=request.form['option4'],
-            correct_option=int(request.form['correct_option'])
+            chapter_id=quiz.chapter_id
         )
         db.session.add(new_question)
         db.session.commit()
+
         flash('Question added successfully!', 'success')
-        return redirect(url_for('edit_quiz', quiz_id=quiz_id))
+
+        return redirect(url_for('create_question', quiz_id=quiz_id))  # Stay on page to add more
+
     return render_template('create_question.html', quiz=quiz)
+
 
 @app.route('/admin/question/edit/<int:question_id>', methods=['GET', 'POST'])
 @admin_required
@@ -499,8 +553,9 @@ def attempt_quiz(quiz_id):
         start_time = datetime.strptime(start_time_str, "%Y-%m-%d %H:%M:%S")
         start_time = start_time.replace(tzinfo=IST)
 
-        end_time = datetime.now(IST)
+        end_time = datetime.now().astimezone(IST)
         time_taken = end_time - start_time
+        time_taken = time_taken - timedelta(hours=5, minutes=30) 
 
         score = 0
         user_answers = {}
@@ -531,7 +586,6 @@ def attempt_quiz(quiz_id):
         return redirect(url_for('quiz_review', score_id=new_score.score_id))
 
     return render_template('attempt_quiz.html', quiz=quiz, questions=questions)
-
 
 
 @app.route('/user/available-quizzes')

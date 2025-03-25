@@ -11,14 +11,12 @@
 
 
     {% if user.is_admin %}
-        <!-- Admin Options -->
         <a href="{{ url_for('edit_quiz', quiz_id=quiz.quiz_id) }}" class="btn btn-warning">Edit Quiz</a>
         <form method="POST" action="{{ url_for('delete_quiz', quiz_id=quiz.quiz_id) }}" style="display:inline;">
             <button type="submit" class="btn btn-danger">Delete Quiz</button>
         </form>
         <a href="{{ url_for('admin_dashboard') }}" class="btn btn-secondary">Back to Dashboard</a>
     {% else %}
-        <!-- User Options -->
         <h4>Instructions:</h4>
         <ul>
             <li>Ensure a stable internet connection.</li>

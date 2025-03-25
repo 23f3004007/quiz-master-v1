@@ -17,14 +17,12 @@
     </div>
 
     {% if current_user.is_admin %}
-        <!-- Admin options -->
         <a href="{{ url_for('edit_user', user_id=profile_user.user_id) }}" class="btn btn-warning mt-3">Edit User</a>
         <form method="POST" action="{{ url_for('delete_user', user_id=profile_user.user_id) }}" style="display:inline;">
             <button type="submit" class="btn btn-danger mt-3">Delete User</button>
         </form>
         <a href="{{ url_for('admin_dashboard') }}" class="btn btn-secondary mt-3">Back to Admin Dashboard</a>
     {% else %}
-        <!-- User option -->
         <a href="{{ url_for('user_dashboard') }}" class="btn btn-secondary mt-3">Back to Dashboard</a>
     {% endif %}
 </div>
