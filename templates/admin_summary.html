@@ -41,6 +41,7 @@
     </table>
 
     <h4>Participant Performance Summary</h4>
+    <div class="table-responsive">
     <table class="table">
         <thead>
             <tr>
@@ -59,6 +60,7 @@
             {% endfor %}
         </tbody>
     </table>
+    </div>
     <a href="{{ url_for('admin_dashboard') }}" class="btn btn-secondary mt-3">Back to Dashboard</a>
 </div>
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>

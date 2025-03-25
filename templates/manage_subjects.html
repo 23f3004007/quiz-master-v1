@@ -4,7 +4,7 @@
 <div class="container mt-4">
     <h2>Subjects</h2>
     <a href="{{ url_for('create_subject') }}" class="btn btn-success mb-3">Add New Subject</a>
-
+    <div class="table-responsive">
     <table class="table">
         <thead>
             <tr>
@@ -28,6 +28,7 @@
             {% endfor %}
         </tbody>
     </table>
+    </div>
     <a href="{{ url_for('admin_dashboard') }}" class="btn btn-secondary mt-3">Back to Dashboard</a>
 </div>
 {% endblock %}

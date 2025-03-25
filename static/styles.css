@@ -23,6 +23,12 @@
     border-radius: 0.5rem;
 }
 
+.container {
+    max-width: 1200px;
+    margin: auto;
+}
+
+
 .quiz-timer {
     position: fixed;
     top: 1rem;
@@ -31,4 +37,21 @@
     color: white;
     padding: 0.5rem 1rem;
     border-radius: 0.25rem;
+}
+@media (max-width: 768px) {
+    .navbar {
+        padding: 10px;
+    }
+    .list-group-item {
+        font-size: 14px;
+    }
+    .quiz-timer {
+        font-size: 12px;
+        padding: 0.3rem 0.7rem;
+    }
+    .action-buttons{
+        display: flex;
+        flex-direction: column;
+        gap: 5px;
+    }
 }

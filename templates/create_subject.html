@@ -3,10 +3,11 @@
 {% block content %}
 <div class="container mt-4">
     <h3>Create New Subject</h3>
-    <form method="POST">
+    <form method="POST" id="subjectForm" class="needs-validation" novalidate>
         <div class="mb-3">
             <label class="form-label">Subject Name</label>
             <input type="text" class="form-control" name="name" required>
+            <div class="invalid-feedback">Subject name must be filled</div>
         </div>
         <div class="mb-3">
             <label class="form-label">Description</label>
