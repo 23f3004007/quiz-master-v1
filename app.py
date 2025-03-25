@@ -1,4 +1,4 @@
-from flask import Flask, redirect, request, render_template, url_for, session, abort, flash
+from flask import Flask, redirect, request, render_template, url_for, session, abort, flash, jsonify
 from flask_sqlalchemy import SQLAlchemy
 from werkzeug.security import generate_password_hash, check_password_hash
 from datetime import datetime, timedelta, timezone, date
@@ -156,8 +156,6 @@ def admin_dashboard():
                          subjects=subjects,
                          chapters=chapters,
                          quizzes=quizzes)
-
-#subject
 # SUBJECT ROUTES
 @app.route('/admin/subject/create', methods=['GET', 'POST'])
 @admin_required
@@ -165,12 +163,10 @@ def create_subject():
     if request.method == 'POST':
         name = request.form['name']
         description = request.form['description']
-        new_subject = Subject(name=name, description=description)  # Changed to 'Subjects' (model fix)
+        new_subject = Subject(name=name, description=description)
         db.session.add(new_subject)
         db.session.commit()
         flash('Subject created successfully!', 'success')
-        
-        # Redirect to the subject page after creation
         return redirect(url_for('subject_page', subject_id=new_subject.subject_id))
 
     return render_template('create_subject.html')
@@ -178,14 +174,12 @@ def create_subject():
 @app.route('/admin/subject/edit/<int:subject_id>', methods=['GET', 'POST'])
 @admin_required
 def edit_subject(subject_id):
-    subject = Subject.query.get_or_404(subject_id)  # Changed to 'Subjects' (model fix)
+    subject = Subject.query.get_or_404(subject_id)
     if request.method == 'POST':
         subject.name = request.form['name']
         subject.description = request.form['description']
         db.session.commit()
         flash('Subject updated successfully!', 'success')
-        
-        # Redirect to the subject page after editing
         return redirect(url_for('subject_page', subject_id=subject.subject_id))
 
     return render_template('edit_subject.html', subject=subject)
@@ -193,12 +187,10 @@ def edit_subject(subject_id):
 @app.route('/admin/subject/delete/<int:subject_id>', methods=['POST'])
 @admin_required
 def delete_subject(subject_id):
-    subject = Subject.query.get_or_404(subject_id)  # Changed to 'Subjects' (model fix)
+    subject = Subject.query.get_or_404(subject_id) 
     db.session.delete(subject)
     db.session.commit()
     flash('Subject deleted successfully!', 'success')
-
-    # Redirect to admin dashboard since subject no longer exists
     return redirect(url_for('admin_dashboard'))
 
 # CHAPTER ROUTES
@@ -214,11 +206,9 @@ def create_chapter():
         db.session.add(new_chapter)
         db.session.commit()
         flash('Chapter created successfully!', 'success')
-
-        # Redirect to the subject page after chapter creation
         return redirect(url_for('subject_page', subject_id=subject_id))
 
-    subjects = Subject.query.all()  # Changed to 'Subjects' (model fix)
+    subjects = Subject.query.all() 
     return render_template('create_chapter.html', subjects=subjects)
 
 @app.route('/admin/chapter/edit/<int:chapter_id>', methods=['GET', 'POST'])
@@ -231,23 +221,19 @@ def edit_chapter(chapter_id):
         chapter.subject_id = request.form['subject_id']
         db.session.commit()
         flash('Chapter updated successfully!', 'success')
-
-        # Redirect to the subject page after editing
         return redirect(url_for('subject_page', subject_id=chapter.subject_id))
 
-    subjects = Subject.query.all()  # Changed to 'Subjects' (model fix)
+    subjects = Subject.query.all() 
     return render_template('edit_chapter.html', chapter=chapter, subjects=subjects)
 
 @app.route('/admin/chapter/delete/<int:chapter_id>', methods=['POST'])
 @admin_required
 def delete_chapter(chapter_id):
     chapter = Chapters.query.get_or_404(chapter_id)
-    subject_id = chapter.subject_id  # Save subject_id before deletion
+    subject_id = chapter.subject_id  
     db.session.delete(chapter)
     db.session.commit()
     flash('Chapter deleted successfully!', 'success')
-
-    # Redirect to the subject page after chapter deletion
     return redirect(url_for('subject_page', subject_id=subject_id))
 
 
@@ -347,7 +333,7 @@ def create_question(quiz_id):
 
         flash('Question added successfully!', 'success')
 
-        return redirect(url_for('create_question', quiz_id=quiz_id))  # Stay on page to add more
+        return redirect(url_for('create_question', quiz_id=quiz_id)) 
 
     return render_template('create_question.html', quiz=quiz)
 
@@ -414,20 +400,12 @@ def delete_user(user_id):
 @admin_required
 def admin_search():
     query = request.args.get('q', '').strip().lower()
-
-    # Search Users (by name or email)
     users = Users.query.filter(
         (Users.fullname.ilike(f"%{query}%")) | 
         (Users.email.ilike(f"%{query}%"))
     ).all()
-
-    # Search Subjects
     subjects = Subject.query.filter(Subject.name.ilike(f"%{query}%")).all()
-
-    # Search Quizzes
     quizzes = Quiz.query.filter(Quiz.name.ilike(f"%{query}%")).all()
-
-    # Search Questions
     questions = Questions.query.filter(Questions.question_statement.ilike(f"%{query}%")).all()
 
     return render_template(
@@ -445,7 +423,7 @@ def subject_page(subject_id):
     subject = Subject.query.get_or_404(subject_id)
     chapters = Chapters.query.filter_by(subject_id=subject_id).all()
     quizzes = Quiz.query.join(Chapters).filter(Chapters.subject_id == subject_id).all()
-    user = Users.query.get(session['user_id'])  # Fetch user from session
+    user = Users.query.get(session['user_id']) 
 
     return render_template('subject_page.html', subject=subject, chapters=chapters, quizzes=quizzes, user=user)
 
@@ -477,7 +455,7 @@ def user_dashboard():
 @login_required
 def user_profile(user_id):
     profile_user = Users.query.get_or_404(user_id)
-    current_user = Users.query.get(session['user_id'])  # Fetch logged-in user
+    current_user = Users.query.get(session['user_id'])
 
     return render_template(
         'user_profile.html',
@@ -506,24 +484,12 @@ def quiz_review(score_id):
 @app.route('/user/search', methods=['GET'])
 @login_required
 def user_search():
-    query = request.args.get('q', '').strip().lower()  # Convert to lowercase for case-insensitive search
-
-    # Search subjects matching the query
+    query = request.args.get('q', '').strip().lower() 
     subjects = Subject.query.filter(Subject.name.ilike(f"%{query}%")).all()
-    
-    # Get subject IDs for filtering quizzes
     subject_ids = [subject.subject_id for subject in subjects]
-
-    # Get quizzes under the found subjects
     quizzes_in_subjects = Quiz.query.join(Chapters).filter(Chapters.subject_id.in_(subject_ids)).all()
-
-    # Get quizzes matching the query (by name)
     quizzes_by_name = Quiz.query.filter(Quiz.name.ilike(f"%{query}%")).all()
-
-    # Merge both lists and remove duplicates
     all_quizzes = {quiz.quiz_id: quiz for quiz in (quizzes_in_subjects + quizzes_by_name)}.values()
-
-    # Separate quizzes under subjects from standalone quizzes
     quizzes_under_subjects = {quiz.quiz_id: quiz for quiz in quizzes_in_subjects}
     other_quizzes = [quiz for quiz in all_quizzes if quiz.quiz_id not in quizzes_under_subjects]
 
@@ -549,7 +515,6 @@ def attempt_quiz(quiz_id):
             flash("Start time is missing. Please retry the quiz.", "danger")
             return redirect(url_for('attempt_quiz', quiz_id=quiz_id))
 
-        # Convert start_time to a timezone-aware datetime
         start_time = datetime.strptime(start_time_str, "%Y-%m-%d %H:%M:%S")
         start_time = start_time.replace(tzinfo=IST)
 
@@ -596,7 +561,6 @@ def available_quizzes():
     return render_template('available_quizzes.html', subjects=subjects, quizzes=quizzes)
 
 
-
 @app.route('/user/change_password', methods=['GET', 'POST'])
 @login_required
 def change_password():
@@ -621,6 +585,33 @@ def view_quiz(quiz_id):
     quiz = Quiz.query.get_or_404(quiz_id)
     questions = Questions.query.filter_by(quiz_id=quiz_id).all()
     return render_template('view_quiz.html', quiz=quiz, questions=questions)
+
+
+#API ROUTES
+@app.route('/api/subjects', methods=['GET'])
+def get_subjects():
+    subjects = Subject.query.all()
+    subjects_list = [{"id": s.subject_id, "name": s.name, "description": s.description} for s in subjects]
+    return jsonify(subjects_list) 
+
+@app.route('/api/chapters/<int:subject_id>', methods=['GET'])
+def get_chapters(subject_id):
+    chapters = Chapters.query.filter_by(subject_id=subject_id).all()
+    chapters_list = [{"id": c.chapter_id, "name": c.name, "description": c.description} for c in chapters]
+    return jsonify(chapters_list)
+
+@app.route('/api/quizzes/<int:chapter_id>', methods=['GET'])
+def get_quizzes(chapter_id):
+    quizzes = Quiz.query.filter_by(chapter_id=chapter_id).all()
+    quizzes_list = [{"id": q.quiz_id, "name": q.name, "date": q.date_of_quiz.strftime('%Y-%m-%d %H:%M'), "remarks": q.remarks} for q in quizzes]
+    return jsonify(quizzes_list)
+
+@app.route('/api/scores/<int:user_id>', methods=['GET'])
+def get_scores(user_id):
+    scores = Scores.query.filter_by(user_id=user_id).all()
+    scores_list = [{"id": s.score_id, "quiz_id": s.quiz_id, "total_score": s.total_scored, "attempt_date": s.time_stamp_of_attempt.strftime('%Y-%m-%d %H:%M')} for s in scores]
+    return jsonify(scores_list)
+
 
 
 @app.route('/logout')
