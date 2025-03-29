@@ -4,6 +4,8 @@ from werkzeug.security import generate_password_hash, check_password_hash
 from datetime import datetime, timedelta, timezone, date
 from functools import wraps
 import json
+from datetime import timezone, timedelta
+
 IST = timezone(timedelta(hours=5, minutes=30))
 
 app = Flask(__name__)
@@ -15,18 +17,30 @@ def login_required(f):
     @wraps(f)
     def decorated(*args, **kwargs):
         if 'user_id' not in session:
+            if request.endpoint in ["login", "register"]:  
+                return f(*args, **kwargs)
             return redirect(url_for('login'))
         return f(*args, **kwargs)
     return decorated
 
+
+
 def admin_required(f):
     @wraps(f)
-    def decorated(*args, **kwargs):
-        user = Users.query.get(session['user_id'])
-        if not user or not user.is_admin:
-            abort(403)
+    def decorated_function(*args, **kwargs):
+        if 'user_id' not in session:
+            if request.endpoint == "login":  
+                return f(*args, **kwargs)
+            return redirect(url_for('login'))
+        
+        if session.get('role') != 'admin':
+            flash("Unauthorized access!", "danger")
+            return redirect(url_for('user_dashboard'))  
+
         return f(*args, **kwargs)
-    return decorated
+    return decorated_function
+
+
 
 class Users(db.Model):
     __tablename__ = 'users'
@@ -92,30 +106,32 @@ class Scores(db.Model):
 @app.route('/')
 def home():
     if 'user_id' in session:
-        user = Users.query.get(session['user_id'])
-        if user and user.is_admin:
-            return redirect(url_for('admin_dashboard'))
-        else:
-            return redirect(url_for('user_dashboard'))
-    return redirect(url_for('login'))  
+        return redirect(url_for('admin_dashboard' if session.get('role') == 'admin' else 'user_dashboard'))
+    return render_template('homepage.html')
+
 
 
 @app.route('/login', methods=['GET', 'POST'])
 def login():
     if 'user_id' in session:
         user = Users.query.get(session['user_id'])
-        return redirect(url_for('admin_dashboard' if user.is_admin else 'user_dashboard'))
-    
+        target_dashboard = 'admin_dashboard' if user.is_admin else 'user_dashboard'
+        if request.endpoint == target_dashboard:  # Prevent redirect loop
+            return render_template('login.html')
+        return redirect(url_for(target_dashboard))
+
     if request.method == 'POST':
         email = request.form.get('email')
         password = request.form.get('password')
         user = Users.query.filter_by(email=email).first()
-        
+
         if user and check_password_hash(user.password, password):
             session['user_id'] = user.user_id
+            session['role'] = 'admin' if user.is_admin else 'user'
             return redirect(url_for('admin_dashboard' if user.is_admin else 'user_dashboard'))
-    
+
     return render_template('login.html')
+
 
 @app.route('/register', methods=['GET', 'POST'])
 def register():
@@ -241,15 +257,24 @@ def manage_quizzes():
 @admin_required
 def create_subject():
     if request.method == 'POST':
-        name = request.form['name']
-        description = request.form['description']
+        name = request.form.get('name', '').strip()
+        description = request.form.get('description', '').strip()
+
+        if not name or len(name) < 3:
+            flash("Subject name must be at least 3 characters.", "danger")
+            return redirect(url_for('create_subject'))
+        if Subject.query.filter_by(name=name).first():
+            flash("Subject already exists!", "danger")
+            return redirect(url_for('create_subject'))
+
         new_subject = Subject(name=name, description=description)
         db.session.add(new_subject)
         db.session.commit()
         flash('Subject created successfully!', 'success')
-        return redirect(url_for('subject_page', subject_id=new_subject.subject_id))
+        return redirect(url_for('admin_dashboard'))
 
     return render_template('create_subject.html')
+
 
 @app.route('/admin/subject/edit/<int:subject_id>', methods=['GET', 'POST'])
 @admin_required
@@ -278,18 +303,26 @@ def delete_subject(subject_id):
 @admin_required
 def create_chapter():
     if request.method == 'POST':
-        name = request.form['name']
-        description = request.form['description']
-        subject_id = request.form['subject_id']
-        
-        new_chapter = Chapters(name=name, description=description, subject_id=subject_id)
+        name = request.form.get('name', '').strip()
+        subject_id = request.form.get('subject_id')
+
+        if not name or len(name) < 3:
+            flash("Chapter name must be at least 3 characters.", "danger")
+            return redirect(url_for('create_chapter'))
+
+        if not Subject.query.get(subject_id):
+            flash("Invalid subject selected.", "danger")
+            return redirect(url_for('create_chapter'))
+
+        new_chapter = Chapters(name=name, subject_id=subject_id)
         db.session.add(new_chapter)
         db.session.commit()
         flash('Chapter created successfully!', 'success')
         return redirect(url_for('subject_page', subject_id=subject_id))
 
-    subjects = Subject.query.all() 
+    subjects = Subject.query.all()
     return render_template('create_chapter.html', subjects=subjects)
+
 
 @app.route('/admin/chapter/edit/<int:chapter_id>', methods=['GET', 'POST'])
 @admin_required
@@ -322,42 +355,47 @@ def delete_chapter(chapter_id):
 @admin_required
 def create_quiz():
     if request.method == 'POST':
-        quiz_name = request.form['quiz_name']
-        chapter_id = request.form['chapter_id']
-        date_of_quiz = request.form['date_of_quiz']
-        end_time_input = request.form['end_time']  
-        duration = int(request.form['duration'])
-        remarks = request.form['remarks']
+        quiz_name = request.form.get('quiz_name', '').strip()
+        chapter_id = request.form.get('chapter_id')
+        date_of_quiz = request.form.get('date_of_quiz')
+        end_time = request.form.get('end_time')
+        duration = int(request.form.get('duration', 0))
+        remarks = request.form.get('remarks', '').strip()
 
-        start_time = datetime.strptime(date_of_quiz, "%Y-%m-%dT%H:%M")
-        end_time = datetime.strptime(end_time_input, "%Y-%m-%dT%H:%M")
-
-        if end_time <= start_time:
-            flash("End time must be after the start time.", "danger")
+        if not quiz_name or len(quiz_name) < 3:
+            flash("Quiz name must be at least 3 characters.", "danger")
             return redirect(url_for('create_quiz'))
 
-        min_allowed_end_time = start_time + timedelta(minutes=duration + 10)
-        if end_time < min_allowed_end_time:
-            flash("End time must be at least 10 minutes more than the quiz duration.", "danger")
+        try:
+            start_time = datetime.strptime(date_of_quiz, "%Y-%m-%dT%H:%M")
+            end_time = datetime.strptime(end_time, "%Y-%m-%dT%H:%M")
+            if end_time <= start_time + timedelta(minutes=duration):
+                flash("End time must be greater than the quiz duration.", "danger")
+                return redirect(url_for('create_quiz'))
+        except ValueError:
+            flash("Invalid date format.", "danger")
             return redirect(url_for('create_quiz'))
+
+        if Questions.query.filter_by(chapter_id=chapter_id).count() == 0:
+            flash("Quiz must have at least one question.", "danger")
+            return redirect(url_for('create_question', quiz_id=new_quiz.quiz_id))
 
         new_quiz = Quiz(
             name=quiz_name,
             chapter_id=chapter_id,
             date_of_quiz=start_time,
-            time_duration=timedelta(minutes=duration),
             end_time=end_time,
+            time_duration=timedelta(minutes=duration),
             remarks=remarks
         )
         db.session.add(new_quiz)
         db.session.commit()
-
-        flash('Quiz created! Now add at least one question.', 'success')
-
-        return redirect(url_for('create_question', quiz_id=new_quiz.quiz_id))
+        flash('Quiz created successfully!', 'success')
+        return redirect(url_for('quiz_page', quiz_id=new_quiz.quiz_id))
 
     chapters = Chapters.query.all()
     return render_template('create_quiz.html', chapters=chapters)
+
 
 
 @app.route('/admin/quiz/edit/<int:quiz_id>', methods=['GET', 'POST'])
@@ -600,12 +638,11 @@ def attempt_quiz(quiz_id):
             flash("Start time is missing. Please retry the quiz.", "danger")
             return redirect(url_for('attempt_quiz', quiz_id=quiz_id))
 
-        start_time = datetime.strptime(start_time_str, "%Y-%m-%d %H:%M:%S")
-        start_time = start_time.replace(tzinfo=IST)
+        start_time = datetime.fromisoformat(start_time_str.replace("Z", "")).replace(tzinfo=timezone.utc).astimezone(IST)
 
-        end_time = datetime.now().astimezone(IST)
-        time_taken = end_time - start_time
-        time_taken = time_taken - timedelta(hours=5, minutes=30) 
+        end_time = datetime.now(timezone.utc).astimezone(IST)
+
+        time_taken = str(end_time - start_time).split('.')[0] 
 
         score = 0
         user_answers = {}
@@ -703,6 +740,7 @@ def get_scores(user_id):
 def logout():
     session.clear()
     return redirect(url_for('home'))
+
 
 def create_admin():
     with app.app_context():
