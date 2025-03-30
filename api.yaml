@@ -1,0 +1,248 @@
+openapi: 3.0.0
+info:
+  title: E-Learning Platform API
+  version: 1.0
+  description: API for managing users, subjects, chapters, quizzes, questions, and quiz attempts.
+
+paths:
+  /login:
+    post:
+      summary: User login
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                username:
+                  type: string
+                password:
+                  type: string
+      responses:
+        '200':
+          description: Login successful
+
+  /register:
+    post:
+      summary: User registration
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                username:
+                  type: string
+                password:
+                  type: string
+                email:
+                  type: string
+                role:
+                  type: string
+      responses:
+        '201':
+          description: Registration successful
+
+  /users:
+    get:
+      summary: Get all users
+      responses:
+        '200':
+          description: List of all users
+
+  /users/{user_id}:
+    get:
+      summary: Get a user by ID
+      parameters:
+        - name: user_id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: User details
+
+  /subjects:
+    post:
+      summary: Create a new subject
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                name:
+                  type: string
+                description:
+                  type: string
+      responses:
+        '201':
+          description: Subject created
+
+  /subjects/{subject_id}:
+    get:
+      summary: Get a subject by ID
+      parameters:
+        - name: subject_id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: Subject details
+
+  /subjects:
+    get:
+      summary: Get all subjects
+      responses:
+        '200':
+          description: List of all subjects
+
+  /chapters:
+    post:
+      summary: Create a new chapter
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                subject_id:
+                  type: integer
+                name:
+                  type: string
+                description:
+                  type: string
+      responses:
+        '201':
+          description: Chapter created
+
+  /chapters/{chapter_id}:
+    get:
+      summary: Get a chapter by ID
+      parameters:
+        - name: chapter_id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: Chapter details
+
+  /quizzes:
+    post:
+      summary: Create a new quiz
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                chapter_id:
+                  type: integer
+                name:
+                  type: string
+                total_marks:
+                  type: integer
+                duration:
+                  type: string
+                quiz_date:
+                  type: string
+      responses:
+        '201':
+          description: Quiz created
+
+  /quizzes/{quiz_id}:
+    get:
+      summary: Get a quiz by ID
+      parameters:
+        - name: quiz_id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: Quiz details
+
+  /questions:
+    post:
+      summary: Create a new question
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                quiz_id:
+                  type: integer
+                question_text:
+                  type: string
+                option1:
+                  type: string
+                option2:
+                  type: string
+                option3:
+                  type: string
+                option4:
+                  type: string
+                correct_option:
+                  type: string
+      responses:
+        '201':
+          description: Question created
+
+  /questions/{question_id}:
+    get:
+      summary: Get a question by ID
+      parameters:
+        - name: question_id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: Question details
+
+  /quiz-attempts:
+    post:
+      summary: Submit a quiz attempt
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                user_id:
+                  type: integer
+                quiz_id:
+                  type: integer
+                score:
+                  type: integer
+      responses:
+        '201':
+          description: Quiz attempt recorded
+
+  /quiz-attempts/{attempt_id}:
+    get:
+      summary: Get a quiz attempt by ID
+      parameters:
+        - name: attempt_id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: Quiz attempt details

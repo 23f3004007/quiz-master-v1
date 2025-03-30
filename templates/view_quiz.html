@@ -1,0 +1,57 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="container mt-4">
+    <h2>{{ quiz.name }}</h2>
+    <div class="card mb-4">
+        <div class="card-body">
+            <h5>Quiz Details</h5>
+            <p><strong>Chapter:</strong> {{ quiz.chapter.name }}</p>
+            <p><strong>Date:</strong> {{ quiz.date_of_quiz.strftime('%Y-%m-%d %H:%M') }}</p>
+            <p><strong>Duration:</strong> {{ quiz.time_duration.seconds /\ 60 }} minutes</p>
+            <p><strong>Remarks:</strong> {{ quiz.remarks }}</p>
+        </div>
+    </div>
+
+    <div class="questions-section">
+        <h4>Questions</h4>
+        {% if session.get('role') == 'admin' %}
+            {% for question in questions %}
+            <div class="card mb-3">
+                <div class="card-body">
+                    <h5 class="card-title">Question {{ loop.index }}</h5>
+                    <p class="card-text">{{ question.question_statement }}</p>
+                    <ul class="list-group">
+                        <li class="list-group-item {% if question.correct_option == 1 %}list-group-item-success{% endif %}">
+                            1. {{ question.option_1 }} {% if question.correct_option == 1 %}<span class="badge bg-success">Correct</span>{% endif %}
+                        </li>
+                        <li class="list-group-item {% if question.correct_option == 2 %}list-group-item-success{% endif %}">
+                            2. {{ question.option_2 }} {% if question.correct_option == 2 %}<span class="badge bg-success">Correct</span>{% endif %}
+                        </li>
+                        <li class="list-group-item {% if question.correct_option == 3 %}list-group-item-success{% endif %}">
+                            3. {{ question.option_3 }} {% if question.correct_option == 3 %}<span class="badge bg-success">Correct</span>{% endif %}
+                        </li>
+                        <li class="list-group-item {% if question.correct_option == 4 %}list-group-item-success{% endif %}">
+                            4. {{ question.option_4 }} {% if question.correct_option == 4 %}<span class="badge bg-success">Correct</span>{% endif %}
+                        </li>
+                    </ul>
+                </div>
+            </div>
+            {% endfor %}
+        {% else %}
+            <div class="alert alert-info">
+                Questions will be visible when you start the quiz.
+            </div>
+        {% endif %}
+    </div>
+
+    <div class="mt-3">
+        {% if session.get('role') == 'admin' %}
+            <a href="{{ url_for('edit_quiz', quiz_id=quiz.quiz_id) }}" class="btn btn-primary">Edit Quiz</a>
+        {% else %}
+            <a href="{{ url_for('attempt_quiz', quiz_id=quiz.quiz_id) }}" class="btn btn-primary">Start Quiz</a>
+        {% endif %}
+        <a href="{{ url_for('user_dashboard') }}" class="btn btn-secondary">Back to Dashboard</a>
+    </div>
+</div>
+{% endblock %}

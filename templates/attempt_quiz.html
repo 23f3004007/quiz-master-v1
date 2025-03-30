@@ -6,43 +6,79 @@
     <p><strong>Chapter:</strong> {{ quiz.chapter.name }}</p>
     <p><strong>Subject:</strong> {{ quiz.chapter.subject.name }}</p>
     <p><strong>Quiz Date:</strong> {{ quiz.date_of_quiz.strftime('%Y-%m-%d %H:%M') }}</p>
-    <p><strong>Time Remaining:</strong> <span id="timer"></span></p>
 
-    <form method="POST" id="quiz-form">
-        <input type="hidden" id="start_time" name="start_time">
+    <div class="d-flex justify-content-between mb-4">
+        <div class="timer-container">
+            <h4>Time Remaining: <span id="countdown" class="text-danger"></span></h4>
+        </div>
+        <div class="timer-container">
+            <h4>Time Elapsed: <span id="timeElapsed">00:00:00</span></h4>
+        </div>
+    </div>
+
+    <form method="POST" id="quizForm">
+        <input type="hidden" name="time_taken" id="time_taken" value="0">
+        <input type="hidden" name="start_time" value="{{ start_time.strftime('%Y-%m-%dT%H:%M:%S.%f') }}">
 
         {% for question in questions %}
         <div class="mb-3">
             <p><strong>{{ loop.index }}. {{ question.question_statement }}</strong></p>
             {% for i in range(1, 5) %}
             <div class="form-check">
-                <input class="form-check-input" type="radio" name="q{{ question.question_id }}" value="{{ i }}" required>
+                <input class="form-check-input" type="radio" name="question_{{ question.question_id }}" value="{{ i }}" required>
                 <label class="form-check-label">{{ question['option_' ~ i] }}</label>
             </div>
             {% endfor %}
         </div>
         {% endfor %}
-        <button type="submit" class="btn btn-success">Submit Quiz</button>
+        <button type="submit" class="btn btn-primary mt-3">Submit Quiz</button>
     </form>
 </div>
 
 <script>
-    if (!localStorage.getItem("quiz_start_time")) {
-        localStorage.setItem("quiz_start_time", new Date().toISOString());
-    }
-    document.getElementById("start_time").value = localStorage.getItem("quiz_start_time");
+    document.addEventListener('DOMContentLoaded', function() {
+        // Initialize elapsed time counter
+        let elapsedSeconds = 0;
+        const timeElapsedElement = document.getElementById('timeElapsed');
+        
+        // Count-up timer
+        const elapsedTimer = setInterval(() => {
+            elapsedSeconds++;
+            const hours = Math.floor(elapsedSeconds / 3600);
+            const minutes = Math.floor((elapsedSeconds % 3600) / 60);
+            const seconds = elapsedSeconds % 60;
+            timeElapsedElement.textContent = 
+                `${String(hours).padStart(2, '0')}:${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`;
+            document.getElementById('time_taken').value = elapsedSeconds;
+        }, 1000);
 
-    let timeLeft = {{ quiz.time_duration.total_seconds() }};
-    function updateTimer() {
-        let minutes = Math.floor(timeLeft / 60);
-        let seconds = timeLeft % 60;
-        document.getElementById('timer').innerText = minutes + "m " + seconds + "s";
-        if (timeLeft <= 0) {
-            document.getElementById('quiz-form').submit();
-        }
-        timeLeft--;
-    }
-    setInterval(updateTimer, 1000);
+        // Countdown timer
+        const duration = {{ quiz.time_duration.total_seconds() }};
+        let timeLeft = duration;
+        const countdownElement = document.getElementById('countdown');
+        
+        const countdownTimer = setInterval(() => {
+            const hours = Math.floor(timeLeft / 3600);
+            const minutes = Math.floor((timeLeft % 3600) / 60);
+            const seconds = timeLeft % 60;
+            
+            countdownElement.textContent = 
+                `${String(hours).padStart(2, '0')}:${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`;
+            
+            if (timeLeft <= 0) {
+                clearInterval(countdownTimer);
+                clearInterval(elapsedTimer);
+                document.getElementById('quizForm').submit();
+            }
+            timeLeft--;
+        }, 1000);
+
+        // Handle form submission
+        document.getElementById('quizForm').addEventListener('submit', function() {
+            clearInterval(countdownTimer);
+            clearInterval(elapsedTimer);
+        });
+    });
 </script>
 
 {% endblock %}
