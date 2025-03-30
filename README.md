@@ -1,6 +1,13 @@
 # Quiz Master
 
 A Flask-based e-learning platform that facilitates quiz management and assessment across multiple subjects.
+<<<<<<< HEAD
+=======
+![Screenshot 2025-03-30 111503](https://github.com/user-attachments/assets/28422fba-2c7a-4292-971a-8f17f97a5b59)
+![Screenshot 2025-03-30 111517](https://github.com/user-attachments/assets/428e998f-03a2-46c3-853e-2b6420956b8c)
+![Screenshot 2025-03-30 111734](https://github.com/user-attachments/assets/257e1c90-2750-4b03-9428-02cf3b0fe6b2)
+![Screenshot 2025-03-30 111751](https://github.com/user-attachments/assets/dc8715b0-16e2-43c9-bc70-1f016e274684)
+>>>>>>> 74dc87d9b2d0dcbb6fa476cdb441c4dceba32600
 
 ## Project Overview
 
@@ -21,8 +28,14 @@ Quiz Master is a web application that enables administrators to create and manag
 - Custom CSS for styling
 
 ## Database Schema
+<<<<<<< HEAD
 
 [Insert Database Schema Diagram Here]
+=======
+![DB Schema diagram](https://github.com/user-attachments/assets/8695d2e5-c77b-47a4-9806-dbb88f4c90a1)
+
+
+>>>>>>> 74dc87d9b2d0dcbb6fa476cdb441c4dceba32600
 
 ## Features
 
@@ -102,4 +115,8 @@ quiz-master-v1/
 └──requirements.txt
 ```
 ## Contributors:
+<<<<<<< HEAD
 ### Veditha R 23f3004007
+=======
+### Veditha R 23f3004007
+>>>>>>> 74dc87d9b2d0dcbb6fa476cdb441c4dceba32600
