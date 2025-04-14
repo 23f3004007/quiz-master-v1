@@ -390,15 +390,10 @@ def create_quiz():
         )
         db.session.add(new_quiz)
         db.session.commit()
-<<<<<<< HEAD
 
         # Redirect to create question page after quiz is created
         flash('Quiz created successfully! Please add questions.', 'success')
         return redirect(url_for('create_question', quiz_id=new_quiz.quiz_id))
-=======
-        flash('Quiz created successfully!', 'success')
-        return redirect(url_for('quiz_page', quiz_id=new_quiz.quiz_id))
->>>>>>> 74dc87d9b2d0dcbb6fa476cdb441c4dceba32600
 
     chapters = Chapters.query.all()
     return render_template('create_quiz.html', chapters=chapters)
@@ -704,12 +699,6 @@ def attempt_quiz(quiz_id):
             flash('Error submitting quiz. Please try again.', 'danger')
             return redirect(url_for('attempt_quiz', quiz_id=quiz_id))
 
-<<<<<<< HEAD
-    return render_template('attempt_quiz.html', 
-                         quiz=quiz, 
-                         questions=questions, 
-                         start_time=datetime.now())  # Pass datetime to template
-=======
         start_time = datetime.fromisoformat(start_time_str.replace("Z", "")).replace(tzinfo=timezone.utc).astimezone(IST)
 
         end_time = datetime.now(timezone.utc).astimezone(IST)
@@ -745,7 +734,6 @@ def attempt_quiz(quiz_id):
         return redirect(url_for('quiz_review', score_id=new_score.score_id))
 
     return render_template('attempt_quiz.html', quiz=quiz, questions=questions)
->>>>>>> 74dc87d9b2d0dcbb6fa476cdb441c4dceba32600
 
 
 @app.route('/user/available-quizzes')
