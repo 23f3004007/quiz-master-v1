@@ -504,17 +504,20 @@ def manage_users():
 @app.route('/admin/user/edit/<int:user_id>', methods=['GET', 'POST'])
 @admin_required
 def edit_user(user_id):
-    user = Users.query.get_or_404(user_id)
+    profile_user = Users.query.get_or_404(user_id)
+    current_user = Users.query.get(session['user_id'])
 
     if request.method == 'POST':
-        user.fullname = request.form['fullname']
-        user.email = request.form['email']
-        user.qualification = request.form['qualification']
+        profile_user.fullname = request.form['fullname']
+        profile_user.email = request.form['email']
+        profile_user.qualification = request.form['qualification']
         db.session.commit()
         flash('User updated successfully!', 'success')
         return redirect(url_for('manage_users'))
 
-    return render_template('edit_user.html', user=user)
+    return render_template('edit_user.html', 
+                         profile_user=profile_user,
+                         current_user=current_user)
 
 @app.route('/admin/user/delete/<int:user_id>', methods=['POST'])
 @admin_required
