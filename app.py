@@ -166,7 +166,9 @@ def admin_dashboard():
     users = Users.query.all()
     subjects = Subject.query.all()
     chapters = Chapters.query.all()
-    quizzes = Quiz.query.all()
+    # Eagerly load the relationships
+    quizzes = Quiz.query.join(Chapters).join(Subject).all()
+    
     return render_template('admin_dashboard.html', 
                          users=users, 
                          subjects=subjects,
@@ -376,10 +378,7 @@ def create_quiz():
             flash("Invalid date format.", "danger")
             return redirect(url_for('create_quiz'))
 
-        if Questions.query.filter_by(chapter_id=chapter_id).count() == 0:
-            flash("Quiz must have at least one question.", "danger")
-            return redirect(url_for('create_question', quiz_id=new_quiz.quiz_id))
-
+        # Create the quiz first
         new_quiz = Quiz(
             name=quiz_name,
             chapter_id=chapter_id,
@@ -391,9 +390,13 @@ def create_quiz():
         db.session.add(new_quiz)
         db.session.commit()
 
-        # Redirect to create question page after quiz is created
-        flash('Quiz created successfully! Please add questions.', 'success')
-        return redirect(url_for('create_question', quiz_id=new_quiz.quiz_id))
+        # Now check for questions and redirect accordingly
+        if Questions.query.filter_by(chapter_id=chapter_id).count() == 0:
+            flash("Please add at least one question to the quiz.", "warning")
+            return redirect(url_for('create_question', quiz_id=new_quiz.quiz_id))
+
+        flash('Quiz created successfully!', 'success')
+        return redirect(url_for('quiz_page', quiz_id=new_quiz.quiz_id))
 
     chapters = Chapters.query.all()
     return render_template('create_quiz.html', chapters=chapters)
@@ -429,8 +432,9 @@ def delete_quiz(quiz_id):
 @app.route('/admin/question/create/<int:quiz_id>', methods=['GET', 'POST'])
 @admin_required
 def create_question(quiz_id):
-    quiz = Quiz.query.get_or_404(quiz_id)
-
+    # Load quiz with chapter relationship
+    quiz = Quiz.query.join(Chapters).filter(Quiz.quiz_id == quiz_id).first_or_404()
+    
     if request.method == 'POST':
         question_text = request.form['question']
         option1 = request.form['option1']
@@ -453,8 +457,14 @@ def create_question(quiz_id):
         db.session.commit()
 
         flash('Question added successfully!', 'success')
-
-        return redirect(url_for('create_question', quiz_id=quiz_id)) 
+        
+        # Check if there are enough questions
+        question_count = Questions.query.filter_by(quiz_id=quiz_id).count()
+        if question_count >= 5:  # Minimum 5 questions required
+            return redirect(url_for('subject_page', subject_id=quiz.chapter.subject_id))
+        else:
+            flash(f'Please add more questions. Currently {question_count}/5 questions.', 'info')
+            return redirect(url_for('create_question', quiz_id=quiz_id))
 
     return render_template('create_question.html', quiz=quiz)
 
@@ -699,41 +709,12 @@ def attempt_quiz(quiz_id):
             flash('Error submitting quiz. Please try again.', 'danger')
             return redirect(url_for('attempt_quiz', quiz_id=quiz_id))
 
-        start_time = datetime.fromisoformat(start_time_str.replace("Z", "")).replace(tzinfo=timezone.utc).astimezone(IST)
-
-        end_time = datetime.now(timezone.utc).astimezone(IST)
-
-        time_taken = str(end_time - start_time).split('.')[0] 
-
-        score = 0
-        user_answers = {}
-
-        for question in questions:
-            selected_option = request.form.get(f'q{question.question_id}')
-            correct_option = question.correct_option
-
-            user_answers[str(question.question_id)] = {
-                "selected": int(selected_option) if selected_option else None,
-                "correct": correct_option
-            }
-
-            if selected_option and int(selected_option) == correct_option:
-                score += 1
-
-        new_score = Scores(
-            user_id=session['user_id'],
-            quiz_id=quiz_id,
-            total_scored=score,
-            time_taken=time_taken,  
-            user_answers=json.dumps(user_answers)  
-        )
-        db.session.add(new_score)
-        db.session.commit()
-
-        flash(f'Quiz completed! Your score: {score}/{len(questions)}', 'success')
-        return redirect(url_for('quiz_review', score_id=new_score.score_id))
-
-    return render_template('attempt_quiz.html', quiz=quiz, questions=questions)
+    # Add current time for GET requests
+    start_time = datetime.now()
+    return render_template('attempt_quiz.html', 
+                         quiz=quiz, 
+                         questions=questions,
+                         start_time=start_time)
 
 
 @app.route('/user/available-quizzes')
