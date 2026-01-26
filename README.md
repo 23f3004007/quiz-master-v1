@@ -89,6 +89,51 @@ python app.py
 - Default Admin Credentials:
   - Email: admin@example.com
   - Password: admin_password
+
+## Branching Strategy
+This project follows a GitHub Flow style workflow:
+- main is the stable, production-ready branch.
+- New work is done on short-lived feature branches created from main
+
+### Typical workflow:
+1. Update local main:
+```bash
+git checkout main
+git pull origin main
+```
+2. Create a feature branch from main:
+```bash
+git checkout -b feature/docker-setup
+```
+3. Commit and push changes to the feature branch:
+```bash
+git add .
+git commit -m "Describe your change"
+git push -u origin feature/docker-setup
+```
+4. Open a Pull Request from the feature branch into main, review, test, and then merge.
+
+5. After merging, delete the feature branch to keep the branch list clean.
+
+## Quick Start - Local Development (Docker)
+### Prerequisites
+- Docker Desktop installed and running
+- Git Installed
+## Steps
+1. Clone the repository:
+```bash
+git clone https://github.com/23f3004007/quiz-master-v1.git
+cd quiz-master-v1
+```
+2. Build Docker image:
+```bash
+docker build -t quiz-master-v1 .
+```
+3. Run the container
+```bash
+docker run -p 5000:5000 quiz-master-v1
+```
+4.Access the application in your browser.
 ## Project Structure
 ```bash
 quiz-master-v1/
