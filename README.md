@@ -104,5 +104,12 @@ quiz-master-v1/
 ├── api.yaml
 └──requirements.txt
 ```
+
+## Local Development Tools
+- **Python 3.x** – Core runtime for the Flask application.
+- **Flask, SQLAlchemy, SQLite** – Backend web framework, ORM, and database.
+- **Docker / Docker Desktop** – Containerized local development and running the app in an isolated environment.
+- **VS Code** – Primary code editor for development and debugging.
+- **Web browser (Chrome/Edge)** – Used to test the web UI at `http://localhost:5000`.
 ## Contributors:
 ### Veditha R 23f3004007
