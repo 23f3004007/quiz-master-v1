@@ -43,7 +43,6 @@ Educational institutions and online learning platforms face several challenges:
 ### Target Users (Personas)
 
 #### Persona 1: Admin / Educator
-- **Name:** Prof. Sharma
 - **Role:** Subject Matter Expert, Quiz Administrator
 - **Goals:**
   - Create and organize quizzes efficiently across multiple subjects
@@ -54,7 +53,6 @@ Educational institutions and online learning platforms face several challenges:
 - **Usage Pattern:** Creates quizzes quarterly, reviews analytics weekly
 
 #### Persona 2: Student / Quiz Taker
-- **Name:** Rahul
 - **Role:** Learner, Quiz Participant
 - **Goals:**
   - Find and attempt quizzes relevant to their coursework
@@ -65,7 +63,6 @@ Educational institutions and online learning platforms face several challenges:
 - **Usage Pattern:** Attempts quizzes daily, reviews performance weekly
 
 #### Persona 3: Institution Administrator
-- **Name:** Dr. Patel
 - **Role:** Educational Institution Manager
 - **Goals:**
   - Deploy and manage the platform for the entire organization
@@ -109,6 +106,44 @@ Educational institutions and online learning platforms face several challenges:
 - **Adaptive Learning Paths** – Personalized quiz sequences based on performance
 - **Gamification** – Leaderboards, badges, achievement tracking
 - **Marketplace** – Share quizzes between educators, curated question banks
+
+---
+
+# Software Design
+Figma Link for the UI/UX components: [FIGMA](https://www.figma.com/design/JRFEuz7y0xvUb3Q60SpMp4/quizmaster?node-id=0-1&t=Gef4DAIg0H8wr846-1)
+## Architecture Overview
+
+Quiz Master follows a **Layered MVC (Model–View–Controller) architecture combined with a Client–Server design pattern**.
+
+The system is divided into:
+
+- **Presentation Layer** – Jinja2 templates, Bootstrap, Chart.js
+- **Application Layer** – Flask Routes and Controllers
+- **Business Logic Layer** – Quiz services, scoring engine, timer validation
+- **Data Access Layer** – SQLAlchemy ORM models
+- **Database Layer** – SQLite (development) / PostgreSQL (production)
+
+### Architecture Diagram
+
+> 📂 Editable Draw.io source available in `/design/`
+
+![Layered Architecture Diagram](design/arch.png)
+
+---
+
+## Design Summary (Main Design Choices)
+
+Quiz Master is structured using a **layered MVC architecture** to ensure high cohesion and low coupling between components. Business logic is separated into service layers to prevent tight coupling with routes, enabling easier maintenance and future API expansion. The system uses ORM abstraction to allow seamless migration from SQLite to PostgreSQL without affecting application logic.
+
+---
+
+## Design Principles Applied
+
+- **Modularity** – Authentication, quiz management, analytics, and user management are logically separated.
+- **Abstraction** – Business logic is abstracted into service functions rather than embedded in route handlers.
+- **High Cohesion** – Each module has a single responsibility.
+- **Low Coupling** – Layers interact through defined interfaces rather than direct cross-dependencies.
+- **Separation of Concerns** – Clear division between UI, application logic, and database operations.
 
 ---
 

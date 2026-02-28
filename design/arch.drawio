@@ -1,0 +1,76 @@
+<mxfile host="app.diagrams.net">
+  <diagram name="Quiz Master – Layered MVC Architecture">
+    <mxGraphModel dx="1420" dy="827" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1100" pageHeight="1600">
+      <root>
+        <mxCell id="0"/>
+        <mxCell id="1" parent="0"/>
+
+        <!-- Title -->
+        <mxCell id="title" value="Quiz Master – Layered MVC Architecture" style="text;html=1;fontSize=20;fontStyle=1;align=center;" vertex="1" parent="1">
+          <mxGeometry x="250" y="20" width="600" height="40" as="geometry"/>
+        </mxCell>
+
+        <!-- Client Layer -->
+        <mxCell id="client" value="Client Browser&#xa;&#xa;• HTML (Jinja2 Templates)&#xa;• Bootstrap&#xa;• Chart.js&#xa;• JavaScript Timer" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;" vertex="1" parent="1">
+          <mxGeometry x="300" y="100" width="500" height="120" as="geometry"/>
+        </mxCell>
+
+        <!-- Flask Layer -->
+        <mxCell id="flask" value="Flask Application Server&#xa;&#xa;Routes / Controllers&#xa;Authentication Middleware&#xa;Session Management" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;" vertex="1" parent="1">
+          <mxGeometry x="300" y="280" width="500" height="140" as="geometry"/>
+        </mxCell>
+
+        <!-- Service Layer -->
+        <mxCell id="service" value="Service Layer&#xa;&#xa;Quiz Service (Creation, Scheduling, Validation)&#xa;Scoring Engine (Atomic Score Calculation)&#xa;Timer Validation Logic&#xa;Analytics Service" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#fff2cc;strokeColor=#d6b656;" vertex="1" parent="1">
+          <mxGeometry x="300" y="480" width="500" height="160" as="geometry"/>
+        </mxCell>
+
+        <!-- ORM Layer -->
+        <mxCell id="orm" value="SQLAlchemy ORM Models&#xa;&#xa;User&#xa;Subject&#xa;Chapter&#xa;Quiz&#xa;Question&#xa;Attempt&#xa;Score" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f8cecc;strokeColor=#b85450;" vertex="1" parent="1">
+          <mxGeometry x="300" y="700" width="500" height="180" as="geometry"/>
+        </mxCell>
+
+        <!-- Database Layer -->
+        <mxCell id="database" value="Database&#xa;&#xa;SQLite (Development)&#xa;PostgreSQL (Production)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#e1d5e7;strokeColor=#9673a6;" vertex="1" parent="1">
+          <mxGeometry x="300" y="940" width="500" height="120" as="geometry"/>
+        </mxCell>
+
+        <!-- External Integrations -->
+        <mxCell id="external1" value="Chart.js" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#000000;" vertex="1" parent="1">
+          <mxGeometry x="880" y="300" width="150" height="50" as="geometry"/>
+        </mxCell>
+
+        <mxCell id="external2" value="Bootstrap" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#000000;" vertex="1" parent="1">
+          <mxGeometry x="880" y="370" width="150" height="50" as="geometry"/>
+        </mxCell>
+
+        <!-- Arrows -->
+        <mxCell id="arrow1" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;endArrow=block;" edge="1" parent="1" source="client" target="flask">
+          <mxGeometry relative="1" as="geometry"/>
+        </mxCell>
+
+        <mxCell id="arrow2" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;endArrow=block;" edge="1" parent="1" source="flask" target="service">
+          <mxGeometry relative="1" as="geometry"/>
+        </mxCell>
+
+        <mxCell id="arrow3" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;endArrow=block;" edge="1" parent="1" source="service" target="orm">
+          <mxGeometry relative="1" as="geometry"/>
+        </mxCell>
+
+        <mxCell id="arrow4" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;endArrow=block;" edge="1" parent="1" source="orm" target="database">
+          <mxGeometry relative="1" as="geometry"/>
+        </mxCell>
+
+        <!-- External arrows -->
+        <mxCell id="arrow5" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;endArrow=block;dashed=1;" edge="1" parent="1" source="external1" target="flask">
+          <mxGeometry relative="1" as="geometry"/>
+        </mxCell>
+
+        <mxCell id="arrow6" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;endArrow=block;dashed=1;" edge="1" parent="1" source="external2" target="flask">
+          <mxGeometry relative="1" as="geometry"/>
+        </mxCell>
+
+      </root>
+    </mxGraphModel>
+  </diagram>
+</mxfile>
