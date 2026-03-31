@@ -9,9 +9,17 @@ from datetime import timezone, timedelta
 IST = timezone(timedelta(hours=5, minutes=30))
 
 app = Flask(__name__)
-app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///quiz_master_database.sqlite3'
+database_url = os.environ.get('DATABASE_URL')
+if database_url and database_url.startswith("postgres://"):
+    database_url = database_url.replace("postgres://", "postgresql://", 1)
+app.config['SQLALCHEMY_DATABASE_URI'] = database_url
 app.config['SECRET_KEY'] = 'secret_key'
 db = SQLAlchemy(app)
+
+@app.route('/init-db')
+def init_db():
+    db.create_all()
+    return "Database tables created successfully!"
 
 def login_required(f):
     @wraps(f)
