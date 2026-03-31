@@ -17,10 +17,6 @@ app.config['SQLALCHEMY_DATABASE_URI'] = database_url
 app.config['SECRET_KEY'] = 'secret_key'
 db = SQLAlchemy(app)
 
-@app.route('/init-db')
-def init_db():
-    db.create_all()
-    return "Database tables created successfully!"
 
 def login_required(f):
     @wraps(f)
